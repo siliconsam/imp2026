@@ -1,0 +1,182 @@
+#!/bin/bash
+# Simple IMP compiler shell wrapper
+
+CC=gcc
+
+# Compiler source and binary folders 
+TEST_DIR=${IMP_SOURCE_HOME}
+RELEASE_DIR=${IMP_INSTALL_HOME}
+
+PROGNAME=`basename $0`
+SHOW_LIST=false
+SHOW_CODE=false
+DO_LINK=true
+TEST_MODE=false
+TIDY_MODE=true
+SHARE_MODE=false
+HEAP_MODE=false
+
+# Parse the arguments...
+MORETODO=true
+while ${MORETODO} ; do
+   case X"$1" in
+   X-Fx)
+    TIDY_MODE=false
+	DO_LINK=false
+    ;;    
+   X-c)
+	DO_LINK=false
+	;;
+   X-Fc)
+	SHOW_CODE=true
+	;;
+   X-Fs)
+	SHOW_LIST=true
+	;;
+   X-Fh)
+	HEAP_MODE=true
+	;;
+   X-e)
+	TEST_MODE=true
+	;;
+   X-s)
+	SHARE_MODE=true
+	;;
+   X-Fi)
+    TIDY_MODE=false
+	;;
+   *)
+	MORETODO=false
+	;;
+   esac
+   ${MORETODO} && shift
+done
+
+if [ $# -ne 1 ]; then
+	echo "${PROGNAME}: No source file?" 1>&2
+	exit 1
+fi
+
+# Determine a possible filename to compile
+FILENAME=
+SRCNAME=
+
+# See if the parameter omitted the .imp file extension
+if [ -e $1.imp ]; then
+	FILENAME=$1.imp
+    SRCNAME=$1
+fi
+
+# See if the parameter omitted the .i file extension
+if [ -e $1.i ]; then
+    FILENAME=$1.i
+    SRCNAME=$1
+fi
+
+# See if the parameter accidentally included a file extension
+if [ -e $1 ]; then
+
+    # try to be ambivalent about which extension is used
+    SRCNAME=`basename $1 .imp`
+    SRCNAME=`basename $SRCNAME .i`
+
+    # and now check that there was one (and it's been removed)
+    if [ X"$SRCNAME.imp" != X"$1" ] && [ X"$SRCNAME.i" != X"$1" ]; then
+        echo "${PROGNAME}: The source parameter $1 has an invalid file extension" 1>&2
+        echo "${PROGNAME}: Legal file extensions are one of (.imp, .i)" 1>&2
+	    exit 1
+    else
+        FILENAME=$1
+    fi
+
+fi
+
+if [[ "${FILENAME}.imp" == ".imp" ]]; then
+    echo "${PROGNAME}: The source parameter $1 has an invalid file extension" 1>&2
+    echo "${PROGNAME}: Legal file extensions are one of (.imp, .i)" 1>&2
+    exit 1
+fi
+
+if ${TEST_MODE}; then
+  INC_DIR=${TEST_DIR}/include
+#  P1_PROG=${TEST_DIR}/compiler/pass1
+#  P2_PROG=${TEST_DIR}/compiler/pass2
+  P1_PROG=${TEST_DIR}/compiler/impdriver
+  P2_PROG=
+  P3_PROG=${TEST_DIR}/pass3/pass3elf
+  LD_SCRIPT=${TEST_DIR}/pass3/ld.i77.script
+  LIB_DIR=${TEST_DIR}/lib
+else
+  INC_DIR=${RELEASE_DIR}/include
+#  P1_PROG=${RELEASE_DIR}/bin/pass1
+#  P2_PROG=${RELEASE_DIR}/bin/pass2
+  P1_PROG=${RELEASE_DIR}/bin/impdriver
+  P2_PROG=
+  P3_PROG=${RELEASE_DIR}/bin/pass3elf
+  LD_SCRIPT=${RELEASE_DIR}/bin/ld.i77.script
+  LIB_DIR=${RELEASE_DIR}/lib
+fi
+
+if ${HEAP_MODE}; then
+  HEAP_OPT="-lc"
+else
+  HEAP_OPT=""
+fi
+
+if ${SHARE_MODE}; then
+  LINK_OPT="-libimp77 -lm ${HEAP_OPT} -T ${LD_SCRIPT}"
+else
+  LINK_OPT="${LIB_DIR}/libimp77.a -lm ${HEAP_OPT} -T ${LD_SCRIPT}"
+fi
+
+if ${SHOW_LIST}; then
+	LISTFILE=${SRCNAME}.lst
+else
+    LISTFILE=/dev/null
+fi
+
+if ${SHOW_CODE}; then
+	CODEFILE=${SRCNAME}.cod
+else
+    CODEFILE=/dev/null
+fi
+
+${P1_PROG} ${INC_DIR}/stdperm ${SRCNAME}
+if [ $? -ne 0 ] ; then
+    echo "imp77: Compilation failure in ${P1_PROG} for $1"
+	exit 1
+fi
+
+#${P2_PROG} ${SRCNAME}.icd,${FILENAME}=${SRCNAME}.ibj,${CODEFILE}
+#if [ $? -ne 0 ] ; then
+#    echo "imp77: Compilation failure in ${P2_PROG} for $1"
+#	exit 1
+#fi
+
+if ${TIDY_MODE}; then
+	rm ${SRCNAME}.icd
+fi
+
+${P3_PROG} ${SRCNAME}.ibj ${SRCNAME}.o
+if [ $? -ne 0 ] ; then
+    echo "imp77: Compilation failure in ${P3_PROG} for $1"
+	exit 1
+fi
+
+if ${TIDY_MODE}; then
+	rm ${SRCNAME}.ibj
+fi
+
+if ${DO_LINK}; then
+    # Linker
+    ${CC} ${M32} -no-pie -o ${SRCNAME} ${SRCNAME}.o ${LINK_OPT}
+
+    if [ $? -ne 0 ] ; then
+        echo "imp77: Linking failure for program $1"
+        exit 1
+    fi
+
+	if ${TIDY_MODE}; then
+		rm ${SRCNAME}.o
+	fi
+fi

@@ -1,0 +1,21 @@
+#! /bin/bash
+
+CC=gcc
+
+BASEDIR=${IMP_INSTALL_HOME}
+BINDIR=${BASEDIR}/bin
+LIBDIR=${BASEDIR}/lib
+IMPLIB=${LIBDIR}/libimp77.a
+#IMPLIB=-limp77
+LDSCRIPT=${BINDIR}/ld.i77.script
+
+line="${CC} ${M32} -no-pie -z no-exec-stack -o $1"
+
+for var in "$@"
+do
+    line=" $line $var.o"
+done
+
+line="$line ${IMPLIB} -lm -lc -T ${LDSCRIPT}"
+
+eval $line
