@@ -1,0 +1,415 @@
+
+    { Retrieve an estimate for PI            }
+    { Using a number of x86 CPU instructions }
+    %longrealfn fpi
+        %longreal xx
+
+        ! Load the value of PI onto the FPU stack
+        ! FLDPI - ST(0) -> pi
+        *=16_D9
+        *=16_EB
+
+        ! Copy the top of FPU stack - ST(0)
+        ! to the %longreal xx on the CPU stack
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        ! Let the world know!!
+        %result = xx
+    %end { of "fpi" }
+
+    { Evauluate a square root of x           }
+    { Using a number of x86 CPU instructions }
+    %longrealfn fsqrt( %longreal x )
+        %longreal xx
+
+        xx = x
+
+        ! Stack f onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Find the Sqrt of the ST(0)
+        ! FSQRT - ST(0) -> sqrt
+        *=16_D9
+        *=16_FA
+
+        ! Copy the evaluated sqrt value
+        ! from the FPU stack to %longreal xx
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        ! Ensure sqrt(x) is within the cMaxSigFigs accuracy
+        %if (|xx| < 1.0@-14) %then xx = 0.0 
+
+        ! Let the world know!!
+        %result = xx
+    %end { of "fsqrt" }
+
+    { Evaluate an approximation for sin(x)   }
+    { Using a number of x86 CPU instructions }
+    %longrealfn fsin( %longreal x )
+        %longreal xx
+
+        xx = x
+
+        ! Stack f onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Find the sin value of the ST(0)
+        ! FSIN - ST(0) -> sine
+        *=16_D9
+        *=16_FE
+
+        ! Copy the evaluated sin value
+        ! from the FPU stack to %longreal xx
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        ! Ensure sin(x) is within the cMaxSigFigs accuracy
+        %if (|xx| < 1.0@-14) %then xx = 0.0
+
+        ! Let the world know!!
+        %result = xx
+    %end { of "fsin" }
+
+    { Evaluate an approximation for cos(x)   }
+    { Using a number of x86 CPU instructions }
+    %longrealfn fcos( %longreal x )
+        %longreal xx
+
+        xx = x
+
+        ! Stack x onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Find the cos value of the ST(0)
+        ! FCOS - ST(0) -> cos
+        *=16_D9
+        *=16_FF
+
+        ! Copy the evaluated cos value
+        ! from the FPU stack to %longreal xx
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        ! Ensure cos(x) is within the cMaxSigFigs accuracy
+        %if (|xx| < 1.0@-14) %then xx = 0.0
+
+        ! Let the world know!!
+        %result = xx
+    %end { of "fcos" }
+
+    { Evaluate an approximation for log2(x)  }
+    { Using a number of x86 CPU instructions }
+    %longrealfn flog2( %longreal x )
+        %longreal xx
+        
+        xx = x
+
+        ! Stack 1.0 onto the FPU stack
+        ! FLD1 - ST(0) = 1.0
+        *=16_D9
+        *=16_E8
+
+        ! Stack x onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Compute 1.0*log2(x)
+        ! FYL2X
+        *=16_D9
+        *=16_F1
+
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        %result = xx
+    %end { of "flog2" }
+
+    { Evaluate an approximation for ln(x)    }
+    { Using a number of x86 CPU instructions }
+    %longrealfn fln( %longreal x )
+        %longreal xx
+
+        xx = x
+
+        ! Stack loge(2) onto the FPU stack
+        ! FLDLG2 - ST(0) -> log10(2)
+        *=16_D9
+        *=16_ED
+
+        ! Stack f onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Compute loge(2)*log2(x)
+        ! FYL2X
+        *=16_D9
+        *=16_F1
+
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        %result = xx
+    %end { of "fln" }
+
+    { Evaluate an approximation for log10(x) }
+    { Using a number of x86 CPU instructions }
+    %longrealfn flog10( %longreal x )
+        %longreal xx
+
+        xx = x
+
+        ! Stack log10 (2) onto the FPU stack
+        ! FLDLG2 - ST(0) -> log10(2)
+        *=16_D9
+        *=16_EC
+
+        ! Stack f onto the FPU stack as ST(0)
+        ! FLD - ST(0) = x
+        *=16_DD
+        *=16_45
+        *=16_08
+
+        ! Compute log10(2)*log2(x)
+        ! FYL2X
+        *=16_D9
+        *=16_F1
+
+        ! FST - xx = ST(0)
+        *=16_DD
+        *=16_5D
+        *=16_F4
+
+        ! Restore the original FPU stack
+        ! Pop FPU stack
+        *=16_D9
+        *=16_F6
+
+        %result = xx
+    %end { of "flog10" }
+
+    %externallongrealfn sqrt(%longreal x )
+        %result = fsqrt( x )
+    %end { of "sqrt" }
+
+    { Retrieve an estimate for PI            }
+    { Using a number of x86 CPU instructions }
+    %externallongrealfn PI
+        %longreal xx
+
+        xx = fpi
+
+        %result = xx
+    %end { of "pi" }
+
+    { Evaluate sine(x) where x is in radians }
+    %externallongrealfn sine(%longreal x )
+        %longreal lambda
+        %integer sign
+
+        lambda = x
+        sign = 1
+
+        { We have: sin( -x ) = sin( x ) }
+        { So convert x to a positive value }
+        %if (lambda < 0) %then lambda = -lambda %and sign = -sign
+
+        { and scale lambda to be a fraction of PI }
+        lambda = lambda / PI
+
+        { Now sin(x) is a periodic function, period = 2*PI }
+        { We have: sin(x + 2*PI) = sin(x) }
+        { So convert lambda to be in the range 0.0 <= lambda < 2.0 }
+        lambda = lambda - 2.0 %while (lambda >= 2.0)
+
+        { We have: sin( x + PI ) = -sin( x ) }
+        %if (lambda >= 1.0) %then lambda = lambda - 1.0 %and sign = -sign
+
+        { So x is now in range 0.0 <= x < PI }
+        { We have: sin( PI/2 - x ) = sin( x ) }
+        %if (lambda >= 0.5) %then lambda = 1.0 - lambda
+
+        { We now have 0 <= lambda <= 0.5, with appropriate sign value }
+        { This is equivalent to 0 <= x <= PI/2 }
+
+        { Now convert lambda to the range 0.0 <= x <= PI/2 }
+        lambda = lambda*PI
+
+        %result = sign*fsin(lambda)
+    %end { of "sine" }
+
+    { Evaluate cosine(x) where x is in radians }
+    %externallongrealfn cosine(%longreal x )
+        %longreal lambda
+        %integer sign
+
+        lambda = x
+        sign = 1
+
+        { We have: cos( x ) = cos( -x ) }
+        { So convert x to a positive value }
+        lambda = -lambda
+
+        { and scale lambda to be a fraction of PI }
+        lambda = lambda / PI
+
+        { Now cos(x) is a periodic function, period = 2*PI }
+        { We have: cos(x + 2*PI) = cos(x) }
+        { So convert lambda to be in the range 0.0 <= lambda < 2.0 }
+        lambda = lambda - 2.0 %while (lambda >= 2.0)
+
+        { We have: cos( x + PI ) = -cos( x ) }
+        %if (lambda >= 1.0) %then lambda = lambda - 1.0 %and sign = -sign
+        
+        { So x is now in range 0.0 <= x < PI }
+        { We have: -cos( PI/2 - x ) = cos( x ) }
+        %if (lambda >= 0.5) %then lambda = 1.0 - lambda %and sign = -sign
+
+        { We now have 0 <= lambda <= 0.5, with appropriate sign value }
+        { This is equivalent to 0 <= x <= PI/2 }
+
+        { Now convert lambda to the range 0.0 <= x <= PI/2 }
+        lambda = lambda*PI
+
+        %result = sign*fcos(lambda)
+    %end { of "cosine" }
+
+    { Evaluate log2(x) }
+    %externallongrealfn log2(%longreal x )
+        %longreal xx
+
+        xx = flog2(x)
+
+        %result = xx
+    %end { of "log2" }
+
+    { Evaluate ln(x) }
+    %externallongrealfn log( %longreal x )
+        %longreal xx
+
+        xx = fln(x)
+
+        %result = xx
+    %end { of "ln" }
+
+    { Evaluate log10(x) }
+    %externallongrealfn log10(%longreal x )
+        %longreal xx
+
+        xx = flog10(x)
+
+        %result = xx
+    %end { of "log10" }
+
+    {------------------------------------------------------------------------}
+    { INTPT - return the integer part of a real.                             }
+    { Note that this is NOT the same as the built-in primitive "INT"         }
+    { which returns the nearest integer to the real according to IEEE        }
+    { rounding rules.                                                        }
+    { Thus, INTPT(1.9) = 1, whereas INT(1.9) = 2.  INTPT uses INT            }
+    { and then adjusts the rounding to truncate.                             }
+    {------------------------------------------------------------------------}
+    %external %integer %function Int Pt(%longreal x)
+        %integer i
+        %longreal y
+
+        i = int(x)
+        y = float(i)
+        %if i # 0 %then %start; ! zero is the easy answer
+            %if (y > x) %then i = i - 1
+        %finish
+        %result = i
+    %end { of "Int Pt" }
+
+    {------------------------------------------------------------------------}
+    { FRACPT - return the fractional part of a real.                         }
+    { The fractional part is always calculated as                            }
+    { x - (largest integer less than or equal to x);                         }
+    { e.g. FRACPT(4.6)=0.6                                                   }
+    { e.g  FRACPT(-4.6)=0.4                                                  }
+    {------------------------------------------------------------------------}
+    %external %longreal %function Frac Pt(%longreal r)
+        %result = r - int pt(r)
+    %end { of "Frac Pt" }
+
+    {------------------------------------------------------------------------}
+    { Simple? SQRT algorithm. Gives approximation of sqrt(x)                 }
+    { SQRT(x) = (x + nearest square)/(2*SQRT(nearest square))                }
+    { nearest square could be less than or greater than x,                   }
+    { depends on which is smaller x - n^2 or (n+1)^2 - x                     }
+    { Quick and dirty algorithm is accurate to at most 3 sig figs            }
+    {                                                                        }
+    { That is SQRT(x) ~= (x + n^2)/2*n)                                      }
+    { where n: n^2     < x < (n+1)^2 and x -     n^2 < (n+1)^2 - x           }
+    { or    n: (n-1)^2 < x < n^2     and x - (n-1)^2 >     n^2 - x           }
+    { This estimate method utilises the inequality:                          }
+    {       n^2 <    x    < (n+1)^2                                          }
+    { which ensures that:                                                    }
+    {        n  < SQRT(x) < n+1                                              }
+    {                                                                        }
+    { e.g.    SQRT(10) ~= (10 + 9)/(2*3)  = 19/6 = 3+1/6                     }
+    { NOT     SQRT(10) ~= (10 + 16)/(2*4) = 26/8 = 3+1/4                     }
+    { e.q.    SQRT(13) ~= (13 + 16)/(2*4) = 29/8 = 3 + 5/8                   }
+    { e.g.    SQRT(2502) ~= (2502 + 2500)/(2*50) = 5002/100                  }
+    {                                                                        }
+    { This could be implemented later as a library function                  }
+    {                                                                        }
+    {------------------------------------------------------------------------}
+    
+%endoffile

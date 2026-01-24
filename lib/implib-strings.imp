@@ -1,0 +1,735 @@
+    {------------------------------------------------------------------------}
+    { Internal data and routines used by external routines in this module    }
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    { store the various characters for number bases                          }
+    { currently bases 2..16 are supported.                                   }
+    { To allow higher bases:                                                 }
+    { Extend basechar to include the additional chars                        }
+    { 2) update the validate base routine to extend
+    {------------------------------------------------------------------------}
+    %constant %string(16) basechar = "0123456789ABCDEF"
+
+    {------------------------------------------------------------------------}
+    { Validate the number base                                               }
+    { Since basechar currently has from 1 to 16 characters                   }
+    { we can only output numbers to base 2 thru 16.                          }
+    { Of course if we add more characters (to basechar) then ...             }
+    { NB a number to base 1 cannot sensibly be displayed.                    }
+    {------------------------------------------------------------------------}
+    %integer %function validate base( %integer base )
+        %integer valid base
+
+        valid base = base
+        valid base = 10 %if (base < 2)
+        valid base = 10 %if (base > length(basechar))
+        
+        %result = valid base
+    %end { of "validate base" }
+
+    {------------------------------------------------------------------------}
+    %string(255) %function gen digits( %integer nn, base )
+        %string(255) reversed
+        %integer n, np, r
+
+        ! Validate the number base
+        base = validate base( base )
+
+        ! now generate the digits in reverse order
+        %if (nn = 0) %start
+            reversed = "0"
+        %finish %else %start
+            ! Now to avoid problems with -MAXINT
+            %if (nn > 0) %start
+                n = -nn
+            %else
+                n = nn
+            %finish
+
+            length(reversed) = 0
+
+            %while (n < 0) %cycle
+                np = n // base
+                r = (np * base) - n
+                ! string index starts at 1 - but r starts from 0
+                ! so if r = 0 we want char 1 in the "basechar" string etc...
+                length(reversed) = length(reversed) + 1
+                charno(reversed,length(reversed)) = charno(basechar,r + 1)
+                n = np
+            %repeat
+
+        %finish
+
+        %result = reversed
+    %end { of "gen digits" }
+
+    {-----------------------------------------------------------------------}
+    { Split a %longreal to indicate if it is negative, and return values of }
+    { mantissa (as a %string of digits) and exponent as a %shortinteger     }
+    { N.B. 1) SigFig accuracy limited to at most cMaxSigFig                 }
+    {      2) The mantissa is rounded up by an extra mantissa digit         }
+    {      3) Rounding make the result futher away from 0                   }
+    {      4) That rounding digit is then removed                           }
+    {      5) The (hidden) decimal point is after the first mantissa digit  }
+    {      6) The negative value is 1 = negative, 0 = positive              }
+    { Split Float returns %true if ff <0, %false otherwise                  }
+    {-----------------------------------------------------------------------}
+    %predicate split float( %longreal ff, %integer sigfigs,
+                            %string(63) %name mantissa,
+                            %integername exponent )
+        %longreal f
+        %integer digit,carry
+        %integer figures
+        %integer i
+
+        ! Set up initial values for nexative, mantissa, exponent
+
+        ! Convert to a positive real number
+        %if (ff < 0) %start
+            f = -ff
+        %else
+            f = ff
+        %finish
+
+        ! Initialise the mantissa
+        length(mantissa) = 0
+
+        ! Initialise the exponent
+        ! Accurate value will be determined later
+        exponent = 0
+
+        ! check the accuracy requeted
+        ! First, limit the accuracy to MaxSigFigs decimal places
+        %if (sigfigs > cMaxSigFigs) %then sigfigs = cMaxSigFigs
+
+        ! Next ensure at least 1 sigfig is requested
+        %if (sigfigs < 1) %then sigfigs = 1
+
+        { We have the numeric accuracy, but need the rounding digit }
+        figures = sigfigs + 1
+
+        %if (f = 0) %start
+            ! Deal with a zero real
+
+            ! Using figures, pad out the mantissa with zero digits
+            ! We use can use figures
+            ! Knowing no rounding is needed
+            ! The last step in this routine will ensure the correct mantissa
+            %for i = 1,1,figures %cycle
+                mantissa = mantissa."0"
+            %repeat
+
+            { At this stage, negative, mantissa and exponent are correct }
+            { So we can return these values }
+        %finish %else %start
+            ! Deal with a positive non-zero real
+
+            ! Determine the exponent so that 1 <= f < 10 and exponent is +ve/-ve
+
+            ! Ensure f has a mantissa value >= 1
+            ! And adjust the exponent accordingly
+            %while (f < 1) %cycle
+                f = f * 10
+                exponent = exponent - 1
+            %repeat
+
+            ! Ensure f has a mantissa value < 10
+            ! And adjust the exponent accordingly
+            %while (f >= 10) %cycle
+                f = f / 10
+                exponent = exponent + 1
+            %repeat
+            ! At this point we have 1 <= f < 10 and a +ve/-ve exponent
+            ! So we know that f has the form n.nnnn
+
+            ! Determine "mantissa" with an extra decimal place
+            ! This extra digit gives greater accuracy and is also
+            ! used to check if rounding is required
+            ! Form the extended mantissa part of f
+            %for i=1,1,figures %cycle                 
+
+                digit = int pt(f)
+
+                ! append the digit as a character
+                length(mantissa) = length(mantissa)+1
+                charno(mantissa,length(mantissa)) = (digit + '0')&16_ff
+
+                f = (f - digit)*10
+            %repeat
+
+            ! At this point the float/real number f is in scientific form
+            ! described by the mantissa and exponent
+            ! NB. mantissa accuracy is constrained by the value of sigfigs
+
+            ! Now to apply rounding to the mantissa string
+            ! We do a ripple-through addition
+            ! starting from the least significant decimal place at the
+            ! end of the mantissa string
+            ! First determine if the last digit generates a carry value
+            ! default the carry to be 0
+        
+            ! Obtain the last digit as a byte value (0..9)
+            digit = (charno(mantissa,length(mantissa)) - '0')&16_ff
+            ! generate the carry value
+            %if digit >= 5 %then carry = 1 %else carry = 0
+
+            ! Now drop the redundant last digit
+            ! It's only use was to see if rounding up was required
+            length(mantissa) = length(mantissa) - 1
+
+            ! Now to do the ripple through addition
+            ! Starting at the last digit upto the first digit
+            %for i = length(mantissa),-1,1 %cycle
+                ! Obtain the digit
+                digit = (charno(mantissa,i) - '0')&16_ff
+
+                ! Add the carry
+                digit = digit + carry
+
+                ! Since a carry is 0,1 and the digit is 0..9
+                ! the new value is at most 10
+                %if (digit = 10) %start
+
+                    ! ok, it is 10
+                    ! So evaluate the next carry
+                    carry = 1
+
+                    ! and the new digit value is 0
+                    digit = 0
+                %finish %else %start
+                    ! Oh, no overflow so no carry
+                    carry = 0
+                %finish
+
+                ! store the updated digit as a character '0'..'9'
+                charno(mantissa,i) = (digit + '0')&16_ff
+        %repeat
+
+            ! Check if we have a carry = 1 from the first mantissa digit
+            %if (carry = 1) %start
+                digit = 1
+                ! Argh we need to extend the mantissa
+                length(mantissa) = length(mantissa) + 1
+
+                ! and shift each character one place right
+                %for i = length(mantissa),-1,2 %cycle
+                    charno(mantissa,i) = charno(mantissa,i - 1)
+                %repeat
+
+                ! Now insert the carry digit
+                ! store the updated digit as a character '0'..'9'
+                charno(mantissa,1) = (digit + '0')&16_ff
+
+                ! And scale the exponent by 1
+                ! This keeps decimal point after the mantissa 1'st digit
+                exponent = exponent + 1
+            %finish
+
+        %finish
+
+        ! Ensure we return the correct number of mantissa digits
+        length(mantissa) = sigfigs
+
+        ! Report back if the real number is negative
+        ! return %true is negative
+        %true %if (ff < 0)
+
+        ! return %false otherwise
+        %false
+
+    %end { of "split float" }
+
+    %constbyte cTrim   = 1
+    %constbyte cFloat  = 2
+
+    {----------------------------------------------------------------------}
+    { Obtain a floating point number as a string, along the lines of       }
+    { [+/-]nnn.nnn@[ /-]nn, to occupy places character spaces.             }
+    { Note - the mantissa is rounded up                                    }
+    { This ensures numbers such as 3.99999 to 2 decimal places become 4.00 }
+    { The mode "flags" guide the layout of the %longreal as a %string      }
+    {----------------------------------------------------------------------}
+    %string(255) %function fl string( %longreal f,
+                                      %integer sig fig,
+                                      %byte mode )
+        %string(63) mantissa
+        %integer exponent
+
+        %string(255) s
+
+        %byte negative
+        %integer point
+        %integer i
+
+        ! first split the %longreal to indicate sign, mantissa and exponent
+        ! Split Float = %true means f < 0, %false means f >= 0
+        %if split float(f,sig fig,mantissa,exponent) %start
+            negative = 1
+        %else
+                negative = 0
+            %finish
+
+        ! At this stage, the decimal point is after the 1'st mantissa digit
+        point = 1
+
+        %if (mode&cFloat # 0) %start
+            %if (-cMaxSigFigs <= exponent < 0) %start
+                %for i = 1,1,|exponent| %cycle
+                    mantissa = "0".mantissa
+                %repeat
+                exponent = 0
+            %finish
+            %if (0 < exponent <= cMaxSigFigs) %start
+                %while length(mantissa) < exponent + 2 %cycle
+                    mantissa = mantissa."0"
+                %repeat
+                point = exponent + 1
+                exponent = 0
+            %finish
+        %finish
+
+        ! We could sneakily remove any trailing '0' characters
+        ! So the float/real string uses fewer characters
+        %if (mode&cTrim # 0) %start
+            ! We defend against removing 0.0 by checking the mantissa length
+            %while (charno(mantissa,length(mantissa)) = '0') %and
+                   (length(mantissa) > point+1) %cycle
+                length(mantissa) = length(mantissa) - 1
+            %repeat
+        %finish
+
+        ! Initialise the %string s , representing the %longreal
+        s = ""
+
+        ! Create string s to hold the mantissa and possibly the decimal point
+        ! Ignore the final mantissa rounding digit
+        %for i = 1,1,length(mantissa) %cycle
+            ! append the mantissa character
+            length(s) = length(s)+1
+            charno(s,length(s)) = charno(mantissa,i)
+
+            ! insert the decimal point unless count = 0
+            s = s."." %if (i = point) %and (length(mantissa) > 1)
+        %repeat
+
+        ! Now form the non-zero exponent to append to s
+        %if (exponent # 0) %start
+            ! Append the exponent expression to s in simple steps
+            ! 1) append the exponent indicator
+            s = s."@"
+
+            ! 2) Don't forget the sign of the exponent
+            s = s."-" %if (exponent < 0)
+
+            ! 3) append the exponent value as a string
+            s = s.I to S(exponent,-1)
+        %finish
+
+        ! Finally, don't forget the sign of the float/real number
+        ! We prefix s with the sign/leading space character
+        %if (negative = 1) %start
+            s = "-".s
+        %else
+            s = " ".s
+        %finish
+
+        ! Now return the float/real as a string in scientific form
+        ! Where the decimal accuracy is given by the value of dp
+        ! And the string is at least places long
+        %result = s
+    %end { of "fl string" }
+
+    %external %string(255) %function F to S( %longreal f, %integer sig fig )
+        %result = fl string( f, sig fig, 0 )
+    %end
+
+    %external %routine print fl( %longreal f, %integer dp )
+        %string(255) s
+	
+        s = F to S( f, dp + 1 )
+
+        printstring( s )
+    %end
+
+    %external %routine print real( %longreal f, %integer sf, places )
+        %string(255) x
+
+        x = F to S( f, sf )
+        ! now fit the float string s into the minimum places requested
+        %while (length(x) < |places|) %cycle
+            x = " ".x %if (places > 0)
+            x = x." " %if (places < 0)
+        %repeat
+
+        printstring(x)
+    %end
+
+    %external %routine print float( %longreal f, %integer sf )
+        %string(255) s,x,y
+        %integer i,places,point
+
+        ! generate the float as a string with the specified sig fig value
+        ! but,
+        ! 1) cTrim  => prune excess '0' characters after the decimal point
+        ! 2) cFloat => shift decimal point left
+        !              (only if the +ve exponent < cMaxSigFigs)
+        ! N.B. cMaxSigFigs represents the maximum accuracy of the mantissa
+        s = fl string( f, sf, cFloat!cTrim )
+
+        ! find where the decimal point is located
+        ! by splitting s into 2 sub-strings
+        ! one X, before the decimal point
+        ! one Y, after the decimal point
+        x = ""
+        y = ""
+        %if s->x.(".").y %start
+            ! Ok, we found the decimal point
+            point = length(x)
+        %finish %else %start
+            ! Argh! no decimal point found
+            ! Why? either f is 0 or only 1 sig fig requested
+            point = 1
+            point = 2 %if (f < 0) %or (sf = 1)
+        %finish
+        ! Beware if the +ve exponent is too large
+
+        ! Pad left with spaces to ensure the decimal point
+        ! is in the same position for all values of sig fig and exponent
+        ! Unfortunately, for %longreal numbers where |exponent| > cMaxSigFigs
+        ! will have to show the @ exponent form
+        places = cMaxSigFigs - point - 1
+        %for i = 1,1,places %cycle
+            s = " ".s
+        %repeat
+
+        ! pad right for all values of sig fig and exponent
+        ! so that the string representing the %longreal
+        ! takes up the same space after the decimal point
+        %while (length(s) < 2*(cMaxSigFigs + 2)) %cycle
+            s = s." "
+        %repeat
+
+        printstring( s )
+    %end
+
+    {------------------------------------------------------------------------}
+    { globally visible routines                                              }
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    %external %routine newline
+        printsymbol(nl)
+    %end { of "newline" }
+
+    {------------------------------------------------------------------------}
+    %external %routine space
+        printsymbol(' ')
+    %end { of "space" }
+
+    {------------------------------------------------------------------------}
+    %external %routine newlines( %integer count )
+        %while count > 0 %cycle
+            printsymbol(nl)
+            count = count - 1
+                %repeat
+    %end { of "newlines" }
+
+    {------------------------------------------------------------------------}
+    %external %routine spaces(%integer count)
+        %while count > 0 %cycle
+            printsymbol(' ')
+            count = count - 1
+                %repeat
+    %end { of "spaces" }
+
+    {------------------------------------------------------------------------}
+    %external %routine printstring( %string(255) s)
+        %integer l, i
+
+        l = length(s)
+
+        %for i = 1, 1, l %cycle
+            printsymbol(charno(s, i))
+                    %repeat
+    %end { of "printstring" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug space
+        debugsymbol( ' ' )
+    %end { of "debug space" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug spaces( %integer count )
+        %integer i
+
+        %if (count > 0) %start
+            %for i = 1,1,count %cycle
+                debugsymbol( ' ' )
+                %repeat
+            %finish
+    %end { of "debug spaces" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug string ( %string(255) s )
+        %integer i
+
+        %for i=1,1,length(s) %cycle
+            debug symbol( charno(s,i))
+                %repeat
+    %end { of "debug string" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug real( %long %real d, %integer sf )
+
+        debug string( F to S( d, sf ) )
+
+    %end { of "debug real" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug newline
+        debug symbol( nl )
+    %end { of "debug newline" }
+
+    {------------------------------------------------------------------------}
+    %external %routine debug newlines( %integer count )
+        %integer i
+
+        %if (count > 0) %start
+            %for i = 1,1,count %cycle
+                debug symbol( nl )
+                %repeat
+            %finish
+    %end { of "debug newlines" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function reverse( %string(255) x )
+        %string(255) human
+        %integer i
+
+        ! Now reverse the digits for human readability.
+        length(human) = 0
+        %for i = length(x), -1, 1 %cycle
+            length(human) = length(human) + 1
+            charno(human,length(human)) = charno( x, i )
+        %repeat
+
+        %result = human
+    %end { of "x reverse" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function sub string(%string(255) s, %integer from, to)
+        %integer get, put
+        %string(255) temp
+
+        ! Do some defensive error checking first
+        %signal 6, 2, from %unless 0 <= from <= length(s)
+        %signal 6, 2, to   %unless 0 <= to   <= length(s)
+        %signal 5, 3       %unless from <= to
+
+        ! We don't use string operations, and instead hand-poke
+        ! the characters, relying on the compiler primitive map
+        ! functions to plant efficient code
+
+        length(temp) = (to - from) + 1
+        put = 1
+        get = from
+        %while get <= to %cycle
+            charno(temp, put) = charno(s, get)
+            put = put + 1
+            get = get + 1
+        %repeat
+
+        %result = temp
+    %end { of "sub string" }
+
+    {------------------------------------------------------------------------}
+    %external %routine To Lower(%string(*)%name s)
+        %integer i
+        %byte %name p
+
+        %for i=1,1,length(s) %cycle
+            p == charno(s,i)
+            %if 'A' <= p <= 'Z' %then p = p + ('a'-'A')
+            %repeat
+    %end { of "To Lower" }
+
+    {------------------------------------------------------------------------}
+    %external %routine To Upper(%string(*)%name s)
+        %integer i
+        %byte %name p
+
+        %for i=1,1,length(s) %cycle
+            p == charno(s,i)
+            %if 'a' <= p <= 'z' %then p = p - ('a'-'A')
+            %repeat
+    %end { of "To Upper" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function trim(%string(255) s, %integer max)
+
+        ! Do some defensive error checking first
+        %signal 6, 2, max %if max < 0
+
+        ! tweak our parameter and return it
+        %if length(s) > max %then length(s) = max
+
+        %result = s
+    %end { of "trim"}
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function rpad(%string(255) s,
+                                          %byte p,
+                                          %integer places)
+        %string(255) x
+
+        x = s
+        ! Pad the string to 'places' characters with the character in 'p'
+        %if (places > length(x)) %start
+            %while length(x) < places %cycle
+                length(x) = length(x) + 1
+                charno(x,length(x)) = p
+                %repeat
+            %finish
+
+        %result = x
+    %end
+
+    {------------------------------------------------------------------------}
+    { The various conversion routines from %byte,%short,%integer to %string  }
+    { are:                                                                   }
+    { 1) evaluated in reverse order                                          }
+    { 2) optionally have the number base appended                            }
+    { 3) optionally have either ' ' or '0' appended for the places requested }
+    { 4) the character sequence is then reversed                             }
+    { NB We use reverse order so that characters are appended not inserted   }
+    { This is an optimisation to reduce space taken by the string routines   }
+    { Currently only base conversions from base 2..base 16 are available     }
+    { The base conversion range can be extended by amending the basechar     }
+    { constant string with additional digit indicators                       }
+    {------------------------------------------------------------------------}
+
+    %constbyte cBare = 0
+    %constbyte cBase = 1
+    %constbyte cSign = 2
+    %constbyte cPad  = 4
+
+    %string(255) %function IntegerToString( %integer n,
+                                            %integer base,places,padding,
+                                            %byte mode)
+        %string(255) s
+
+        ! Validate the number base
+        base = validate base( base )
+
+        ! Now generate the number string in reverse order
+        s = gen digits( |n|, base )
+
+        %if (mode&cBase = cBase) %start
+            %if (base # 10) %start
+                s = s."_"
+                s = s.gen digits( |base|, 10 )
+                %finish
+            %finish
+
+        %if (mode&cSign = cSign) %start
+            %if (n < 0) %start
+                s = s."-"
+            %else %if (places > 0)
+                s = s." "
+                    %finish
+            %finish
+
+        %if (mode&cPad = cPad) %start
+            %if places <=0 %then places = -places %else places = places + 1
+            s = rpad(s,padding,places)
+        %finish
+
+        %result = reverse( s )
+
+    %end { of "IntegerToString" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function int2ascii( %integer n, base, places )
+        %result = IntegerToString(n,base,places,' ',cPad)
+    %end { of "int2ascii" }
+
+    {------------------------------------------------------------------------}
+    { format the number to the given number base                             }
+    { and prefix by the number base expressed in base 10                     }
+    {------------------------------------------------------------------------}
+    %external %string(255) %function formatNumber( %integer n,base,places)
+        %result = IntegerToString(n,base,places,' ',cBase!cPad)
+    %end { of "formatNumber" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function I to S(%integer n, places)
+        %result = IntegerToString(n,10,places,' ',cPad)
+    %end { of "I to S" }
+
+    {------------------------------------------------------------------------}
+    %external %string(255) %function int2hex( %integer n, places )
+        %result = IntegerToString(n,16,places,'0',cPad)
+    %end { of "int2hex"}
+
+    {------------------------------------------------------------------------}
+    { The following functions convert %byte,%short,%integer to a %string     }
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    %external %string(8) %function byte2bin( %byte nn )
+        %string(8) human
+        %integer i
+
+        human = "00000000"
+
+        %for i = 1,1,16 %cycle
+            charno(human,9 - i) = charno(basechar,1+(nn&1))
+            nn = nn >> 1
+            %repeat
+
+        %result = human
+    %end { of "byte2bin" }
+
+    {------------------------------------------------------------------------}
+    %external %string(16) %function short2bin( %short nn )
+        %string(16) human
+        %integer i
+   
+        human = "0000000000000000"
+
+        %for i = 1,1,16 %cycle
+            charno(human,17 - i) = charno(basechar,1+(nn&1))
+            nn = nn >> 1
+        %repeat
+
+        %result = human
+    %end { of "short2bin" }
+
+    {------------------------------------------------------------------------}
+    %external %string(32) %function int2bin( %integer nn )
+        %string(32) human
+        %integer i
+
+        human = "00000000000000000000000000000000"
+
+        %for i = 1,1,32 %cycle
+            charno(human,33 - i) = charno(basechar,1+(nn&1))
+            nn = nn >> 1
+            %repeat
+
+        %result = human
+    %end { of "int2bin" }
+
+    {------------------------------------------------------------------------}
+    { Write an integer on the current output stream.                         }
+    { Uses "I to S" to occupy PLACES character spaces on the page            }
+    {------------------------------------------------------------------------}
+    %external %routine Write( %integer n,places )
+
+        printString( IntegerToString(n,10,places,' ',cSign!cPad) )
+
+    %end { of "Write" }
+
+{----------------------------------------------------------------------------}
+%endoffile

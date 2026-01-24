@@ -1,0 +1,35 @@
+{----------------------------------------------------------------------------}
+    %constinteger dbgoff = 0
+    %constinteger dbgon  = 1
+
+    ! Make sure debug mode is initially switched off
+    %own %integer debuglevel = dbgoff
+
+    {------------------------------------------------------------------------}
+    %external %routine Set Debug
+        debuglevel = dbgon
+    %end { of "Set Debug" }
+
+    {------------------------------------------------------------------------}
+    %external %routine Clear Debug
+        debuglevel = dbgoff
+    %end { of "Clear Debug" }
+
+    {------------------------------------------------------------------------}
+    %external %integer %fn Debug Mode
+        %result = debuglevel
+    %end { of "Debug Mode" }
+
+    {------------------------------------------------------------------------}
+    %external %predicate Show Debug
+        %true %if debuglevel = dbgon
+        %false
+    %end { of "Show Debug" }
+
+    {------------------------------------------------------------------------}
+    %external %routine Set Debug Level( %integer lvl )
+		debuglevel = lvl
+	%end { of "Set Debug Level" }
+
+{----------------------------------------------------------------------------}
+%endoffile

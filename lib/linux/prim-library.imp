@@ -1,0 +1,175 @@
+    {------------------------------------------------------------------------}
+    %include "impcore.types.inc"
+    {------------------------------------------------------------------------}
+    %include "prim.clib.inc"
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    { Imp interface routines to library routines implemented in C            }
+    { The C routines are defined in the prim.clib.inc file                   }
+    { Those routines use an alias name to refer to the actual C routine      }
+    { The alias name may need to be changed for different operating systems  }
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    { External C routines used to manipulate processes                       }
+    {------------------------------------------------------------------------}
+
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    { Extra Primitives                                                       }
+    { These are wrappers around some C library routines                      }
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    %external %routine exit( %integer status )
+        prim exit( status )
+    %end
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    { System File primitives                                                 }
+    { These are wrappers around the core C library file routines             }
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    %external %integer %fn get error
+        %result = prim get error
+    %end { of "get error" }
+
+    %external %integer %fn get stderr handle
+        %result = prim geterrhandle
+    %end { of "get stderr handle" }
+
+    %external %integer %fn get stdin handle
+        %result = prim getinhandle
+    %end { of "get stdin handle" }
+
+    %external %integer %fn get stdout handle
+        %result = prim getouthandle
+    %end { of "get stdout handle" }
+
+    %external %integer %fn openfile ( %integer mode address, %integer file name address )
+        %result = prim openfile( mode address, file name address )
+    %end { of "openfile" }
+
+    %external %integer %fn tell ( %integer handle )
+        %result = prim tell( handle )
+    %end { of "tell" }
+
+    %external %routine file rewind( %integer handle )
+        prim file rewind( handle )
+    %end { of "file rewind" }
+
+    %external %routine file seek ( %integer handle, displacement, pos )
+        prim file seek( handle, displacement, pos )
+    %end { of "file seek" }
+
+    %external %routine close( %integer handle )
+        prim close( handle )
+    %end { of "close" }
+
+    %external %integer %fn readbytes( %integer handle, count, itemsz, %byte %name buffer )
+        %result = prim readbytes( handle, count, itemsz, buffer )
+    %end { of "readbytes" }
+
+    %external %integer %fn writebytes( %integer handle, count, itemsz,%byte %name buffer )
+        %result = prim writebytes( handle, count, itemsz, buffer )
+    %end { of "writebytes" }
+
+    %external %predicate eof( %integer handle )
+        %false %if prim eof( handle ) = 0
+        %true
+    %end { of "eof" }
+
+    %external %integer %fn get char( %integer handle )
+        %result = prim get char( handle )
+    %end { of "get char" }
+
+    %external %routine put char( %integer handle,ch )
+        prim put char( handle,ch )
+    %end { of "put char" }
+
+    %external %routine flush( %integer handle )
+        prim flush( handle )
+    %end { of "flush" }
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    { External C routines used for heap data creation/removal                }
+    {------------------------------------------------------------------------}
+    { Check that the required variable has a valid type for the heap }
+    %predicate ok heap type( %integer type )
+        %true %if (type = integer type)
+        %true %if (type = real type)
+        %true %if (type = string type)
+        %true %if (type = record type)
+        %true %if (type = byte type)
+        %true %if (type = short type)
+        %true %if (type = long type)
+        %true %if (type = long real type)
+        %false
+    %end { of "ok heap type" }
+
+    %external %routine Dispose ( %name Template )
+        %integer Where = Addr( Template )
+
+        impfree( Where )
+    %end { of "Dispose" }
+
+    %external %record(*) %map New ( %name Template )
+        %record(*) %name Res
+        %integer type
+
+        type = typeof( Template )
+        %signal 5,5,type %unless ok heap type( type )
+
+        %integer Bytes = (sizeof( template )+3) & (\3) { round to longword }
+
+        Res == impmalloc(Bytes)
+
+        %result == Res
+    %end { of "New" }
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+    { C routines implementing simple mathematics library functions           }
+    { These routines can also be implemented using embedded x86 instructions }
+    {------------------------------------------------------------------------}
+!    %external %long %real %function Cosine(%longreal r)
+!
+!        ! Slightly arbitrary - the C library tries to work with larger values,
+!        ! but this demonstrates keeping the error case in the IMP world
+!        %if |r| > 30000 %then %signal 10,1,5
+!
+!        %result = C Lib Cos(r)
+!    %end { of "Cosine" }
+!
+!    %external %long %real %function Sine(%longreal r)
+!
+!        ! Slightly arbitrary - the C library tries to work with larger values,
+!        ! but this demonstrates keeping the error case in the IMP world
+!        %if |r| > 30000 %then %signal 10,1,5
+!
+!        %result = C Lib Sine(r)
+!    %end { of "Sine" }
+!
+!    { Evaluate the log base 10 of x }
+!    %external %long %real %function Log10(%longreal x)
+!
+!        ! Slightly arbitrary - the C library tries to work with larger values,
+!        ! but this demonstrates keeping the error case in the IMP world
+!        %if |x| > 30000 %then %signal 10,1,5
+!
+!        %result = C Lib Log10(x)
+!    %end { of "Log10" }
+!
+!    { Evaluate then natural log (base e) of x }
+!    %external %long %real %function Log(%longreal x)
+!
+!        ! Slightly arbitrary - the C library tries to work with larger values,
+!        ! but this demonstrates keeping the error case in the IMP world
+!        %if |x| > 30000 %then %signal 10,1,5
+!
+!        %result = C Lib Log(x)
+!    %end { of "Log" }
+
+    {------------------------------------------------------------------------}
+    {------------------------------------------------------------------------}
+
+%endoffile

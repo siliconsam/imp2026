@@ -1,0 +1,198 @@
+{----------------------------------------------------------------------------}
+    ! General Imp READ routine
+    ! Copyright 2002 NB Information Limited
+    ! Enhanced JD McMullin 2021
+
+    %include "impcore.types.inc"
+
+    ! Check that the types match
+    %predicate ok read type( %integer type )
+        %true %if (type = integer type)
+        %true %if (type = real type)
+        %true %if (type = string type)
+        %false %if (type = record type)
+        %true %if (type = byte type)
+        %true %if (type = short type)
+        %true %if (type = long type)
+        %true %if (type = long real type)
+        %false
+    %end { of "ok read type" }
+
+    %predicate whitespace( %integer ch )
+        %true %if (ch = ' ')
+        %true %if (ch = 8)
+        %true %if (ch = NL)
+        %true %if (ch = 13)
+        %false
+    %end { of "whitespace" }
+
+    %external %routine Read( %name ptr )
+        %string(255)  s
+        %integer ch
+        %integer sign, digit, len, adr, type, base, found
+        %longreal  r, exp, frac
+        ! following variables used when copying %string s into %name ptr
+        %byte %name dst,src
+        %integer i
+
+        len = size of(ptr)
+        adr = addr(ptr)
+        type = type of(ptr)
+
+        %signal 5,5,type %unless ok read type(type)
+
+        ! skip white space
+        skip symbol %while whitespace(next symbol)
+
+        ! First deal with the string type
+        %if (type = string type) %start
+
+            ! grab the "string" into a holding area (%string s)
+            length(s) = 0
+            %cycle
+                ch = next symbol
+                %exit %if whitespace(ch)
+                ! A check to see we are not overflowing the string s
+                ! if so, we silently ignore this char 
+                %if (length(s) < MaxStringLen) %start
+                    length(s) = length(s) + 1
+                    charno(s,length(s)) = ch
+                %finish
+                skip symbol
+            %repeat
+
+            ! Check the string s will NOT overflow the target variable
+            %signal 6,1 %if (length(s) > len)
+
+            ! Now to put the string just "read", into the variable specified
+            %for i = 0,1,length(s) %cycle
+                dst == byteinteger( adr + i )
+                src == byteinteger( addr(s) + i )
+                dst = src
+            %repeat
+
+            %return
+        %finish
+
+        ! The rest (integer/short/byte/real/longreal) all expect a number
+        ! We collect it in a longreal so that we can correctly read
+        ! an integer type into a real that is bigger than MaxInt/MaxShort/MaxByte
+        base = 10
+        sign = 0
+
+        readsymbol(sign) %if (next symbol = '-') %or (next symbol = '+')
+
+        %cycle
+            r = 0
+            found = 0
+
+            %cycle
+                ch = next symbol
+                %if ('0' <= ch <= '9') %start
+                    digit = ch - '0'
+                %else %if 'A' <= ch & 95 <= 'Z'
+                    digit = ch & 95 - 'A' + 10
+                %finish %else %exit
+                %exit %if (digit >= Base)
+                found = 1
+                skip symbol
+                r = r * Base + digit
+            %repeat
+
+            %exit %if (ch # '_') %or (r = 0)
+
+            base = int(r)
+            skipsymbol
+        %repeat
+
+        ! here we've got an integer in R - if that's what we want, exit now
+        ! So, for a %integer
+        %if (type = integer type) %start
+
+            %signal 3,1,ch %if (found = 0); ! no digits?  then report the char we found
+
+            %if (int(r) > MaxInt) %then %signal 1,1
+            
+            %if (sign = '-') %then r = -r
+            integer(adr) = int(r)
+            %return
+        %finish
+
+        ! here we've got a long integer in R - if that's what we want, exit now
+        ! So, for a %long
+        %if (type = long type) %start
+
+            %signal 3,1,ch %if (found = 0); ! no digits?  then report the char we found
+
+            %if (int(r) > MaxInt) %then %signal 1,1
+            
+            %if (sign = '-') %then r = -r
+            integer(adr) = int(r)
+            %return
+        %finish
+
+        ! So, for a %short
+        %if (type = short type) %start
+
+            %signal 3,1,ch %if (found = 0); ! no digits?  then report the char we found
+
+            %if (sign = '-') %start
+                %if (int(r) > 1 + MaxShort) %then %signal 1,6
+            %finish %else %start
+                %if (int(r) > MaxShort) %then %signal 1,6
+            %finish
+
+            %if (sign = '-') %then r = -r
+
+            short integer(adr) = int(r)&x'FFFF'
+            %return
+        %finish
+
+        ! So, for a %byte
+        %if (type = byte type) %start
+
+            %signal 3,1,ch %if (found = 0); ! no digits?  then report the char we found
+
+            %if (r > MaxByte) %or (sign = '-') %then %signal 1,1
+            byte integer(adr) = int(r)&x'FF'
+            %return
+        %finish
+
+        ! If we're still here, we are collecting a floating point number
+        %if (ch = '.') %start
+            skip symbol
+            frac = 0
+            exp = 10
+
+            %cycle
+                ch = next symbol
+                %exit %unless ('0' <= ch <= '9')
+                frac = frac + (ch - '0')/exp
+                exp = exp*10
+                found = 1
+                skip symbol
+            %repeat
+
+            r = r + frac
+        %finish
+
+        ! We should really worry about @Exponent at this point...
+        ! ... add that to the to-do list!
+
+        %signal 3,1,ch %if (found = 0)
+
+        %if (type = real type) %and (r > MaxFloat) %then %signal 1,2
+
+        %if (sign = '-') %start
+            r = -r
+        %finish
+
+        %if (type = real type) %start
+            real(adr) = r
+        %else
+            long real(adr) = r
+        %finish
+    %end { of "read" }
+
+{----------------------------------------------------------------------------}
+%endoffile
