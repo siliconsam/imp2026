@@ -1,0 +1,95 @@
+
+    { I/O Stream identifiers }
+    %include "Stream3L.inc"
+
+    %constinteger   Max Buff = 4096+256,
+                    Buffer Safe Limit = Max Buff-256-32-512
+
+    %ownbyteintegerarray buff(1:Max Buff)
+    %owninteger bp           = 0
+    %owninteger faulty       = 0        { fault indicator }
+
+    %externalintegerfn fault count
+        %result = faulty
+    %end { of "fault count" }
+
+    %externalroutine another fault
+        faulty = faulty + 1
+    %end { of "another fault" }
+
+    %externalroutine flush buffer
+        %integer j
+
+        %if faulty = 0 %start
+            select output(icode out)
+            printsymbol(buff(j)) %for j = 1, 1, bp
+            select output(listing)
+        %finish
+        bp = 0
+    %end { of "flush buffer" }
+
+    %externalpredicate near buffer limit
+        %true %if bp >= Buffer Safe Limit
+        %false
+    %end { of "near buffer limit" }
+
+    %externalroutine add char( %byteinteger ch )
+        buff(bp+1) = ch { store next byte }
+        bp=bp+1
+    %end { of "add char" }
+
+    { This loads the 2-byte parameter }
+    %externalroutine add word(%integer m)
+        { shift, load then store each byte in turn }
+        add char(m>>8)  { store byte 0 }
+        add char(m)     { store byte 1 }
+    %end { of "add word" }
+
+    { The 32 bit integer is stored with most significant byte first and the  }
+    { least significant byte last                                            }
+    %externalroutine add long(%integer m)
+        { now store the 32-bit integer as 4 bytes as described }
+        { shift, load then store each byte in turn }
+        add char(m>>24) { store byte 0 }
+        add char(m>>16) { store byte 1 }
+        add char(m>>8)  { store byte 2 }
+        add char(m)     { store byte 3 }
+    %end { of "add long" }
+
+    { write the "contents" of the string }
+    %externalroutine add string( %string(255) s )
+        %integer i
+
+        %for i=1,1,length(s) %cycle
+            add char( charno(s,i)&255 )
+        %repeat
+    %end { of "add string" }
+
+    { This loads the iCode instruction and the 2-byte parameter }
+    %externalroutine add operation(%integer code, m)
+        add char(code)
+
+        add word(m)
+    %end { of "op" }
+
+    %externalroutine append tag(%integer m)
+        add operation(',',m)
+    %end { of "Append Tag" }
+
+    %externalroutine octal(%integer n)
+        %integer m
+
+        m = n>>3
+        octal(m) %if m # 0
+        add char( n&7+'0' )
+    %end { of "octal" }
+
+    %externalroutine hexadecimal(%integer n)
+        %integer m
+
+        m = n>>4
+        hexadecimal(m) %if m # 0
+        %if n&15 > 9 %then add char( n&15+'A' ) %else add char( n&15+'0' )
+    %end { of "hexadecimal" }
+
+%endoffile

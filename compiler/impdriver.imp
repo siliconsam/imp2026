@@ -1,0 +1,98 @@
+
+%externalroutinespec PASS1(%integername No stats, No Faults, No Warnings, %integer Options)
+%externalroutinespec PASS2(%integername No stats, No Faults, %integer Options)
+
+%external %routine impdriver %alias "__impmain"
+
+    %integer No stats, No Faults, No Warnings
+    %integer Options
+    %string(255) imp source, imp defs, imp mode
+    %string(255) def file, imp file, icd file, ibj file, list file, code file
+
+    %include "Stream3L.inc"
+    %include "Option3L.inc"
+
+    %predicate run pass( %string(255) mode, pass )
+        %string(255) I,J
+
+        %true %if mode = ""
+
+        to upper( pass )
+        to upper( mode )
+        %true %if mode -> I.(pass).J
+        %false
+    %end
+
+!    printstring("ARG#=");write(getargcount,0);newline
+!    printstring("PROG=".getarg(0));newline
+
+    %if (getargcount >= 3) %start
+        imp defs   = getarg(1)
+        imp source = getarg(2)
+        imp mode   = getarg(3)
+
+!printstring("DEFS=".imp defs);newline
+!printstring(" SRC=".imp source);newline
+!printstring("MODE=".imp mode);newline
+
+        def file  = imp defs.".imp"
+        imp file  = imp source.".imp"
+        icd file  = imp source.".icd"
+        ibj file  = imp source.".ibj"
+        list file = imp source.".lst"
+        code file = imp source.".cod"
+  
+        No Stats = 0
+        No Warnings = 0
+        No Faults = 0
+        options = LL Predef!LL List!LL Report!XX Show ICode
+
+        %if run pass( imp mode, "pass1" ) %start
+            open input( source, impfile )
+            open input( predef in, def file )
+            open binary output( icode out, icdfile )
+            open output( listing, listfile )
+            select input( predef in )
+
+            PASS1(No stats, No Faults, No Warnings, Options)
+
+            select output(report)
+            printstring("#Stats=");write(No Stats,0); newline
+            printstring("#Warnings=");write(No Warnings,0); newline
+            printstring("#Faults=");write(No Faults,0); newline
+
+            select output ( icode out )
+            close output
+            select output( listing )
+            close output
+        %finish
+
+        %if (No Faults = 0) %and run pass( imp mode, "pass2" ) %start
+            open binary input( icode in2, icdfile )
+            open input( source, impfile )
+            open output( object out, ibjfile )
+            open output( listing, codefile )
+
+            PASS2(No Stats, No Faults, Options )
+
+            select output( object out )
+            close output
+            select output( listing )
+            close output
+        %finish
+
+    %finish %else %start
+        select output(report)
+        print string( "    impdriver has missing parameters" );          newline
+                                                                         newline
+        print string( "    Mandatory parameters" );                      newline
+        print string( "    Arg(1): IMP core routine definitions file" ); newline
+        print string( "    Arg(2): IMP source file" );                   newline
+                                                                         newline
+!        print string( "    Optional parameters" );                       newline
+!        print string( "    Arg(3): If present => %short == 2 bytes" );   newline
+!                                                                         newline
+    %finish
+
+%end { of "impdriver" }
+%endoffile

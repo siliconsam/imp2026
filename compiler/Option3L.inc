@@ -1,0 +1,28 @@
+%endoflist
+    %constinteger   LL Trusted   = 1<< 0,
+                    LL Trace     = 1<< 1,
+                    LL Vars      = 1<< 2,
+                    LL Lines     = 1<< 3,
+                    LL Records   = 1<< 4,
+                    LL Assigned  = 1<< 5,
+                    LL Array     = 1<< 6,
+                    LL Range     = 1<< 7,
+                    LL Variants  = 1<< 8,
+                    LL Knuth     = 1<< 9,
+                    LL Warn      = 1<<10,
+                    LL Mon       = 1<<11,
+                    LL Reference = 1<<12,
+                    LL Notify    = 1<<13,
+                    LL Extend    = 1<<14,
+                    LL Level0    = 1<<15,
+                    LL Report    = 1<<16,
+                    LL Decode    = 1<<17,
+                    LL Predef    = 1<<18,
+                    LL List      = 1<<19,
+                    LL Stack     = 1<<20,
+                    LL Anon      = 1<<21,
+                    LL Brief     = 1<<22,
+                    LL Debug     = 1<<23,
+                    XX ShowICode = 1<<24
+%list
+%endoffile

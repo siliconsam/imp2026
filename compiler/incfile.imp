@@ -1,0 +1,75 @@
+%externalstring(255)%fn Actual Include %alias "ACTINC"(%string(255) F, I)
+    %string(255) X,J,K,L
+
+    { N.B. Windows and Linux both accept / as a directory seperator        }
+    { You need to alter this routine for other operating systems           }
+    {                                                                      }
+    { If the F string is not empty it indicates a directory containing     }
+    { the include file represented by the string I                         }
+    { However, the value of F will be the name of an environment variable  }
+    { The value of the environment variable will give the directory folder }
+    { to precede the filename in I                                         }
+    {                                                                      }
+    { Values for F                                                         }
+    { IMP - expects the folder given by the value of the IMP_INCLUDE_HOME  }
+    {       environment variable                                           }
+    { XXX - expects the folder given by the value of the XXX (eg FRED)     }
+    {       environment variable                                           }
+    {                                                                      }
+    { If the F string is empty then string I will be examined for a value  }
+    { to indicate a mechanism to select an environment variable which will }
+    { contains a directory name to prefix the remaining include file       }
+    {                                                                      }
+    { Values for I indicating a "pointer" to a directory name              }
+    { $IMP:<include file>                                                  }
+    { $IMP: is replaced by the value of the IMP_SOURCE_HOME env variable   }
+    {       where /include/ is also inserted before the <include file>     }
+    {                                                                      }
+    { IMP:<include file>                                                   }
+    { IMP: is replaced by the value of the IMP_INCLUDE_HOME env variable   }
+    {      which is then inserted before the <include file>                }
+    {                                                                      }
+    { $XXX:<include file>                                                  }
+    { $XXX: is replaced by the value of the XXX env variable (e.g. $FRED:  }
+    {       which is then inserted before the <include file>               }
+    {                                                                      }
+    { The directory name could be explicitly given as part of the include  }
+    { string. e.g. "..\include\Option3L.inc"                               }
+    { The directory name could be omitted and the current direcory used    }
+    { e.g. "Option.inc"                                                    }
+
+    { called on a %from F include I statement }
+    { Adjust the file name strings to suit the O/S target }
+!!   Length(I) = 9 %if Length(I) > 9
+!!   Length(F) = 9 %if Length(F) > 9
+
+    { Check to see if F is not empty }
+    %if (F = "IMP") %start
+        { We have detected a reference to IMP }
+        X = get env as string( "IMP_INCLUDE_HOME" ).I
+    %finish %else %if (F <> "") %start
+        { We have detected a reference to some environment variable }
+        X = get env as string( F )."/".I
+    %finish %else %if I -> ("IMP:").J %start
+        { We have detected a reference to IMP: }
+        X = get env as string( "IMP_INCLUDE_HOME" ).J
+    %finish %else %if I -> ("$IMP:").J %start
+        { We have detected a reference to $IMP: }
+        X = get env as string( "IMP_SOURCE_HOME" )."/include/".J
+    %finish %else %if I -> ("$").J %start
+        { We have detected a reference to $XXX: }
+        %if J -> K.(":").L %start
+            X = get env as string( K ).L
+        %finish %else %start
+            ! Oops, the format of the include string is in error
+            ! We should indicate an error
+            ! But for the moment, ignore the %include entry
+        %finish
+    %finish %else %start
+        { No more tests so default to only using I }
+        X = I
+    %finish
+
+    %result = X
+%end
+%endoffile
