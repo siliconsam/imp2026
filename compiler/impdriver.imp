@@ -45,7 +45,9 @@
         No Stats = 0
         No Warnings = 0
         No Faults = 0
-        options = LL Predef!LL List!LL Report!XX Show ICode
+        options = LL Predef!LL List!LL Report
+
+        options = options!XX Show ICode
 
         %if run pass( imp mode, "pass1" ) %start
             open input( source, impfile )
