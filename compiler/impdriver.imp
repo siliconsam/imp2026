@@ -47,7 +47,7 @@
         No Faults = 0
         options = LL Predef!LL List!LL Report
 
-        options = options!XX Show ICode
+        options = options!XX Show ICode %if (get env as integer( "IMP_DIAGNOSE" )&16 # 0)
 
         %if run pass( imp mode, "pass1" ) %start
             open input( source, impfile )
@@ -67,9 +67,12 @@
             close output
             select output( listing )
             close output
+            select input( source )
+            close input
         %finish
 
         %if (No Faults = 0) %and run pass( imp mode, "pass2" ) %start
+
             open binary input( icode in2, icdfile )
             open input( source, impfile )
             open output( object out, ibjfile )
@@ -81,6 +84,8 @@
             close output
             select output( listing )
             close output
+            select input( source )
+            close input
         %finish
 
     %finish %else %start
