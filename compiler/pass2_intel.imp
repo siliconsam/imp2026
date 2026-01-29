@@ -2650,7 +2650,7 @@ esac:
     %end { of "dump ibj format" }
 
     ! tell the object file maker what source line we are on
-    %routine dumplinenumber(%integer line)
+    %routine dump line number(%integer line)
         putcodeword( line )
         writeifrecord(IF LINE)
     %end { of "dump linenumber" }

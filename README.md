@@ -1,6 +1,6 @@
 "# imp2026"
 IMP-77 for WSL (Windows sub-system for Linux), UNIX/Linux
-This version is labeled IMP2022 (but still implements the IMP-77 language)
+This version is labeled IMP2026 (but still implements the IMP-77 language)
 
 This version enhances the IMP2024 version of the IMP-77 compiler.
 Note that this Git repository only contains the IMP2026 compiler.
@@ -11,10 +11,7 @@ Imp code examples are now in the "imp_examples" Git repository.
 Imp tools sources are now in the "imp_tools" Git repository.
 
 Enhancements:
-    1) The separate pass1 and pass2 programs have been converted to be callable external routines.
-       The program impdriver calls these 2 routines to read IMP77 source and generate .IBJ files
-       The pass3elf (or pass3coff) programs convert the .IBJ files to a .o (or .obj) file for later linking
-       compiler The run-time library reports line numbers and source module names in stack trace
+    1) The run-time library reports line numbers and source module names in stack trace
        triggered by an IMP signal that has no event handler.
     2) The IMP compiler executables (and library) by default are in the same folder structure as the compiler source
 
@@ -65,11 +62,7 @@ policies, so you may need to make some changes.  In particular:
     This ld.i77.script is ESSENTIAL.
     It ensures that Imp-77 line tracing and Imp-77 event handling data can be included.
 
-    These 2 aspects depend on 
-    a) event trap data in readonly section ".trap" formed from ".imp.trap.b", multiple ".imp.trap.d" and ".imp.trap.f" sections in that order.
-    b) line number v code address data in readonly section ".line" formed from ".imp.line.b", multiple ".imp.line.d" and ".imp.line.f" sections in that order.
-
-    The Windows linker does this automatically for the corresponding COFF sections.
+    The Windows linker does this automatically
     Versions of the GCC binutils loader ld (upto 2.27) under WSL/Linux seem ok!
     Versions of the GCC binutils loader ld (after 2.27) have problems with relocation records
 
