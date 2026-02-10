@@ -1,10 +1,11 @@
 
-    ! Special hidden routines only inserted by the pass2 of the compiler
-    ! when the %control directive forces (control&4 # 0) - bit 2 set
+    ! Special hidden routines inserted by the pass2 of the compiler
+    ! They act as pseudo perm routines, but are hidden as an %integer %function
+    ! They all return a value of the specified parameter in the %EAX register
+
+    ! They can be optionally switched on by %control or %diagnose
     ! These routines can trigger an %event X,Y,Z as a side-effect
-    ! should the corresponding test fail.
-    ! They all return a possibly amended value of the integer parameter
-    ! in %EAX register
+    ! should the embedded test fail.
 
     ! "impcheck1" checks if x in range -32768..32767
     !   - failure returns %EAX = 0 and triggers %event 1,6,x
@@ -48,6 +49,17 @@
             *mov _ %eax,#0
             %signal 1,4
         %finish
+    %end
+
+    { Sign extend a %short into an %integer }
+    %external %routine s2i( %short s )
+        *movsx_ %EAX,s
+    %end
+
+    { Zero extend a %byte into an %integer }
+    %external %routine b2i( %byte b )
+        *mov_ %EAX,b
+        *and_ %eax,#255
     %end
 
 %endoffile
