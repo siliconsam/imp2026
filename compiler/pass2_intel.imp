@@ -325,6 +325,8 @@
     %integer check2 { routine tag for "_IMPCHECK2" }
     %integer check3 { routine tag for "_IMPCHECK3" }
 
+    %integer dumpICode
+
     ! Compiler Internal Operations (not to be confused with OpCodes)
     %constinteger  ADDx    = 1
     %constinteger  SUBx    = 2
@@ -5890,7 +5892,7 @@ roper(EXPx):
 
             %if (mode # 0) %then %start
                 ! Put non-terminal index onto stack for PERM
-                %if (top_type = bytetype) %start
+                %if (top_type = bytetype) %or (top_type = shorttype) %start
                     loadreg(top, any)
                 %else
                     address(top)
@@ -5917,7 +5919,7 @@ roper(EXPx):
             %else
                 ! This is the final (and perhaps only) subscript for a checked array,
                 ! so we are going to use the Perm - therefore pass this as a parameter
-                %if (top_type = bytetype) %start
+                %if (top_type = bytetype) %or (top_type = shorttype) %start
                     loadreg(top, any)
                 %else
                     address(top)
@@ -7281,781 +7283,6 @@ done:
 
         %include "machinecode.inc"
 
-        %routine parseICode( %integer iCodeInst )
-            %switch c(33:127)
-
-            -> c(iCodeInst)
-
-c(iCodeOR):
-            -> esac
-
-c(iCodeCOMPARED):
-            -> esac
-
-c(iCodeJNE):
-            temp tag     = ReadTag
-            -> esac
-
-c(iCodeDEF):
-            temp tag     = ReadTag
-            temp string  = Get Ascii( ',' )
-            temp tf      = ReadTagComma
-            temp size    = ReadTagComma
-            temp scope   = ReadTag
-            -> esac
-
-c(iCodeXOR):
-            -> esac
-
-c(iCodeAND):
-            -> esac
-
-c(iCodePUSHS):
-            ! Stack string constant
-            temp string = ReadString
-            -> esac
-
-c(iCodeJLE):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeJGE):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeMUL):
-            -> esac
-
-c(iCodeADD):
-            -> esac
-
-c(iCodeSUB):
-            -> esac
-
-c(iCodeCONCAT):
-            -> esac
-
-c(iCodeQUOT):
-            -> esac
-
-c(iCodeLOCATE):
-            ! Define compiler label
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeEND):
-            -> esac
-
-c(iCodeJL):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeJE):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeJG):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeCOMPARE):
-            ! Compare values
-            -> esac
-
-c(iCodePUSH):
-            ! Stack variable descriptor (calls Stack Var)
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeINIT):
-            ! Initialise OWN variable
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeREPEAT):
-            ! Backward Jump
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeCOMPAREA):
-            ! Compare addresses
-            -> esac
-
-c(iCodePUSHR):
-            ! Stack real constant
-            temp longreal = ReadReal
-            -> esac
-
-c(iCodeCALL):
-            -> esac
-
-c(iCodeGOTO):
-            ! Forward Jump
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeALIAS):
-            ! Alias for item about to be declared
-            temp string = ReadString
-            -> esac
-
-c(iCodeBEGIN):
-            ! Start of BEGIN block
-            -> esac
-
-c(iCodeJUMP):
-            ! Jump to user label
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeFALSE):
-            ! %false
-            -> esac
-
-c(iCodeLABEL):
-            ! Define user label
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeMAP):
-            ! MAP result
-            -> esac
-
-c(iCodePUSHI):
-            ! Load integer constant (calls Push Const)
-            temp integer = ReadInteger
-            -> esac
-
-c(iCodeLINE):
-            ! Set line number
-            temp tag = ReadTag
-            -> esac
-
-c(iCodePLANT):
-            ! Machine code literal
-            -> esac
-
-c(iCodeDIVIDE):
-            -> esac
-
-c(iCodeRETURN):
-            ! RETURN
-            -> esac
-
-c(iCodeASSVAL):
-            ! Normal value assignment
-            -> esac
-
-c(iCodeTRUE):
-            ! %true
-            -> esac
-
-c(iCodeNEGATE):
-            -> esac
-
-c(iCodeRESULT):
-            ! FN result
-            -> esac
-
-c(iCodeSJUMP):
-            ! Jump to switch
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeIEXP):
-            -> esac
-
-c(iCodeASSREF):
-            ! Assign address '=='
-            -> esac
-
-c(iCodeLSH):
-            -> esac
-
-c(iCodeNOT):
-            -> esac
-
-c(iCodeRSH):
-            -> esac
-
-c(iCodeSETFORMAT):
-            ! {Set Format}
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeSLABEL):
-            ! Define switch label
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeACCESS):
-            -> esac
-
-c(iCodeBOUNDS):
-            ! Define constant bounded Dope Vector
-            -> esac
-
-c(iCodeALTNEXT):
-            -> esac
-
-c(iCodeDIM):
-            ! dimensions, count of variables
-            ! NB in params:  =0 -> simple array,  # 0 -> array-in-record
-            temp tag = ReadTagComma
-            temp count = ReadTag
-            -> esac
-
-c(iCodeEVENT):
-            ! %signal event
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeFOR):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeALTSTART):
-            -> esac
-
-c(iCodeALTEND):
-            -> esac
-
-c(iCodeINDEX):
-            -> esac
-
-c(iCodeJAM):
-            ! JAM transfer
-            -> esac
-
-c(iCodeJZ):
-            ! Branch on FALSE (= 0)
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeLANG):
-            ! We currently only support standard IMP - who knows the future
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeMONITOR):
-            ! %monitor
-            -> esac
-
-c(iCodeSELECT):
-            ! Select member from record format
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeON):
-            ! %on %event block
-            temp tag = ReadTagComma
-            temp evfrom = ReadTag
-            -> esac
-
-c(iCodeASSPAR):
-            ! Pass a parameter
-            -> esac
-
-c(iCodeSUBA):
-            ! --
-            -> esac
-
-c(iCodeRESOLVE):
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeSTOP):
-            ! %stop
-            -> esac
-
-c(iCodeJNZ):
-            ! Branch on TRUE (# 0)
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeADDA):
-            ! ++
-            -> esac
-
-c(iCodeMOD):
-            -> esac
-
-c(iCodeMCODE):
-            ! JDM JDM: escape to machine assembler code
-            temp string = Get Ascii( ';' )
-
-            ! Machine specific decode
-            parseMachineCode( temp string )
-
-            -> esac
-
-c(iCodeREXP):
-            -> esac
-
-c(iCodeDIAG):
-            ! %diagnose n (what about pass3? how do we send to pass3)
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeCONTROL):
-            ! %control n
-            temp tag = ReadTag
-            -> esac
-
-c(iCodeSTART):
-            ! Start of formal parameters
-            -> esac
-
-c(iCodeFINISH):
-            ! End of formal parameters
-            -> esac
-
-c(iCodeALT):
-            ! alternate record format
-            temp tag = ReadByte
-            -> esac
-
-c( * ):
-            ! To catch the sinners!! (that is - an unimplemented iCode)
-            -> esac
-esac:
-
-        %end { of "parseICodeInst" }
-
-        %routine showICode( %integer iCodeInst )
-            %switch c(33:127)
-            %integer i
-
-            ListICode
-
-            -> c(iCodeInst)
-
-c(iCodeOR):
-            -> esac
-
-c(iCodeCOMPARED):
-            -> esac
-
-c(iCodeJNE):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeDEF):
-            spaces(4)
-            write(temp tag,0)
-            printsymbol( ',' )
-            printsymbol( '"' )
-            printstring( temp string )
-            printsymbol( '"' )
-            printsymbol( ',' )
-            write( temp tf,0)
-            printsymbol( ',' )
-            write( temp size,0)
-            printsymbol( ',' )
-            write( temp scope,0)
-            spaces(4)
-
-            printsymbol( '(' )
-            printstring( " " . get own string( temp scope&7 ) )
-            printstring( " " . get type def( ( temp tf>>4), temp size ) )
-            printstring( " " . get external form name( temp tf&15 ) )
-            { See if there are any flags set }
-
-            %if ((temp scope>>3)&31 # 0) %start
-                { Ok, flags were set so show them }
-                printstring( " [" . get flags string( (temp scope>>3)&31 ) . "]" )
-            %finish
-
-            space
-            printsymbol( ')' )
-            -> esac
-
-c(iCodeXOR):
-            -> esac
-
-c(iCodeAND):
-            -> esac
-
-c(iCodePUSHS):
-            ! Stack string constant
-            spaces(4)
-            printsymbol( '"' )
-            printstring( temp string )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeJLE):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeJGE):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeMUL):
-            -> esac
-
-c(iCodeADD):
-            -> esac
-
-c(iCodeSUB):
-            -> esac
-
-c(iCodeCONCAT):
-            -> esac
-
-c(iCodeQUOT):
-            -> esac
-
-c(iCodeLOCATE):
-            ! Define compiler label
-            spaces(4)
-            write(temp tag,0)
-            -> esac
-
-c(iCodeEND):
-            -> esac
-
-c(iCodeJL):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeJE):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeJG):
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeCOMPARE):
-            ! Compare values
-            -> esac
-
-c(iCodePUSH):
-            ! Stack variable descriptor (calls Stack Var)
-            spaces(4)
-            printsymbol( '"' )
-            printstring( get symbol name( temp tag ) )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeINIT):
-            ! Initialise OWN variable
-            spaces(4)
-            write( temp tag,0)
-            -> esac
-
-c(iCodeREPEAT):
-            ! Backward Jump
-            spaces(4)
-            printsymbol( 'L' )
-            write( temp tag, 0)
-            -> esac
-
-c(iCodeCOMPAREA):
-            ! Compare addresses
-            -> esac
-
-c(iCodePUSHR):
-            ! Stack real constant
-            spaces(4)
-            print fl( temp longreal,8 )
-            -> esac
-
-c(iCodeCALL):
-            -> esac
-
-c(iCodeGOTO):
-            ! Forward Jump
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeALIAS):
-            ! Alias for item about to be declared
-            spaces(4)
-            printsymbol( '"' )
-            printstring( temp string )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeBEGIN):
-            ! Start of BEGIN block
-            -> esac
-
-c(iCodeJUMP):
-            ! Jump to user label
-            spaces(4)
-            printstring( get symbol name( temp tag ) )
-            -> esac
-
-c(iCodeFALSE):
-            ! %false
-            -> esac
-
-c(iCodeLABEL):
-            ! Define user label
-            spaces(4)
-            printstring( get symbol name( temp tag ) )
-            -> esac
-
-c(iCodeMAP):
-            ! MAP result
-            -> esac
-
-c(iCodePUSHI):
-            ! Load integer constant (calls Push Const)
-            spaces(4)
-            write( temp integer,0)
-            -> esac
-
-c(iCodeLINE):
-            ! Set line number
-            spaces(4)
-            write( temp tag, 0)
-            -> esac
-
-c(iCodePLANT):
-            ! Machine code literal
-            -> esac
-
-c(iCodeDIVIDE):
-            -> esac
-
-c(iCodeRETURN):
-            ! RETURN
-            -> esac
-
-c(iCodeASSVAL):
-            ! Normal value assignment
-            -> esac
-
-c(iCodeTRUE):
-            ! %true
-            -> esac
-
-c(iCodeNEGATE):
-            -> esac
-
-c(iCodeRESULT):
-            ! FN result
-            -> esac
-
-c(iCodeSJUMP):
-            ! Jump to switch
-            spaces(4)
-            printsymbol( '"' )
-            printstring( get symbol name( temp tag ) )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeIEXP):
-            -> esac
-
-c(iCodeASSREF):
-            ! Assign address '=='
-            -> esac
-
-c(iCodeLSH):
-            -> esac
-
-c(iCodeNOT):
-            -> esac
-
-c(iCodeRSH):
-            -> esac
-
-c(iCodeSETFORMAT):
-            ! {Set Format}
-            spaces(4)
-            printsymbol( '=' )
-            printsymbol( '"' )
-            printstring( get symbol name( temp tag ) )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeSLABEL):
-            ! Define switch label
-            spaces(4)
-            printsymbol( '"' )
-            printstring( get symbol name( temp tag ) )
-            printsymbol( '"' )
-            -> esac
-
-c(iCodeACCESS):
-            -> esac
-
-c(iCodeBOUNDS):
-            ! Define constant bounded Dope Vector
-            -> esac
-
-c(iCodeALTNEXT):
-            -> esac
-
-c(iCodeDIM):
-            ! dimensions, count of variables
-            ! NB in params:  =0 -> simple array,  # 0 -> array-in-record
-            spaces(4)
-            write( temp tag,0)
-            printsymbol( ',' )
-            write( temp count,0)
-            -> esac
-
-c(iCodeEVENT):
-            ! %signal event
-            spaces(4)
-            write( temp tag,0)
-            -> esac
-
-c(iCodeFOR):
-            spaces(4)
-            write( temp tag,0)
-            -> esac
-
-c(iCodeALTSTART):
-            -> esac
-
-c(iCodeALTEND):
-            -> esac
-
-c(iCodeINDEX):
-            -> esac
-
-c(iCodeJAM):
-            ! JAM transfer
-            -> esac
-
-c(iCodeJZ):
-            ! Branch on FALSE (= 0)
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeLANG):
-            ! We currently only support standard IMP - who knows the future
-            spaces(4)
-            write( temp tag, 0 )
-            -> esac
-
-c(iCodeMONITOR):
-            ! %monitor
-            -> esac
-
-c(iCodeSELECT):
-            ! Select member from record format
-            spaces(4)
-            write( temp tag,0)
-            -> esac
-
-c(iCodeON):
-            ! %on %event block
-            spaces(4)
-            write( temp tag,0)
-            printsymbol( ',' )
-            write( temp evfrom,0)
-            -> esac
-
-c(iCodeASSPAR):
-            ! Pass a parameter
-            -> esac
-
-c(iCodeSUBA):
-            ! --
-            -> esac
-
-c(iCodeRESOLVE):
-            spaces(4)
-            write( temp tag, 0)
-            -> esac
-
-c(iCodeSTOP):
-            ! %stop
-            -> esac
-
-c(iCodeJNZ):
-            ! Branch on TRUE (# 0)
-            spaces(4)
-            printsymbol( 'L' )
-            write(temp tag,0)
-            -> esac
-
-c(iCodeADDA):
-            ! ++
-            -> esac
-
-c(iCodeMOD):
-            -> esac
-
-c(iCodeMCODE):
-            ! JDM JDM: escape to machine assembler code
-            spaces(4)
-!            printstring( temp string )
-
-            printstring( instruction )
-
-            %if (params count # 0) %start
-                printsymbol( ' ' )
-                ! now to show each parameter
-                %for i = 1,1,params count %cycle
-                    %if (i > 1) %start
-                        printsymbol( ',' )
-                    %finish
-                    printstring( params(i)_data )
-                %repeat
-            %finish
-            -> esac
-
-c(iCodeREXP):
-            -> esac
-
-c(iCodeDIAG):
-            ! %diagnose n (what about pass3? how do we send to pass3)
-            spaces(4)
-            write( temp tag, 0)
-            -> esac
-
-c(iCodeCONTROL):
-            ! %control n
-            spaces(4)
-            write( temp tag, 0)
-            -> esac
-
-c(iCodeSTART):
-            ! Start of formal parameters
-            -> esac
-
-c(iCodeFINISH):
-            ! End of formal parameters
-            -> esac
-
-c(iCodeALT):
-            ! alternate record format
-            spaces(4)
-            printsymbol( temp tag )
-            -> esac
-
-c( * ):
-            ! To catch the sinners!! (that is - an unimplemented iCode)
-            -> esac
-esac:
-            newline
-        %end { of "showICodeInst" }
-
         !--------------------------------------------------------------
         ! Code for ASSEMBLE starts here...
         First Name = Names
@@ -8123,374 +7350,1040 @@ esac:
             ! From this point the iCodeInst is a legal iCode
             ! Hopefully the iCode instruction parameters are valid
 
-            parseICode( iCodeInst )
-
-            ! JDM JDM debug show the iCode instruction
-            showICode( iCodeInst ) %if (options&XX Show ICode # 0) %or (diagnose&16 # 0)
-            ! JDM JDM end debug
-
             -> c(iCodeInst)
 
 c(iCodeOR):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+            
             Operation( ORx )
             %continue
 
 c(iCodeCOMPARED):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Compare Double
             %continue
 
 c(iCodeJNE):
+            temp tag     = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, NE )
             %continue
 
 c(iCodeDEF):
+            temp tag     = ReadTag
+            temp string  = Get Ascii( ',' )
+            temp tf      = ReadTagComma
+            temp size    = ReadTagComma
+            temp scope   = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write(temp tag,0)
+                printsymbol( ',' )
+                printsymbol( '"' )
+                printstring( temp string )
+                printsymbol( '"' )
+                printsymbol( ',' )
+                write( temp tf,0)
+                printsymbol( ',' )
+                write( temp size,0)
+                printsymbol( ',' )
+                write( temp scope,0)
+                spaces(4)
+
+                printsymbol( '(' )
+                printstring( " " . get own string( temp scope&7 ) )
+                printstring( " " . get type def( ( temp tf>>4), temp size ) )
+                printstring( " " . get external form name( temp tf&15 ) )
+                { See if there are any flags set }
+
+                %if ((temp scope>>3)&31 # 0) %start
+                    { Ok, flags were set so show them }
+                    printstring( " [" . get flags string( (temp scope>>3)&31 ) . "]" )
+                %finish
+
+                space
+                printsymbol( ')' )
+
+                newline
+            %finish
+
             Define Var( temp tag, temp string, temp tf, temp size, temp scope )
             %continue
 
 c(iCodeXOR):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( XORx )
             %continue
 
 c(iCodeAND):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( ANDx )
             %continue
 
 c(iCodePUSHS):
             ! Stack string constant
+            temp string = ReadString
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '"' )
+                printstring( temp string )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Input String Value( temp string )
             %continue
 
 c(iCodeJLE):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, LE )
             %continue
 
 c(iCodeJGE):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, GE )
             %continue
 
 c(iCodeMUL):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( MULx )
             %continue
 
 c(iCodeADD):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( ADDx )
             %continue
 
 c(iCodeSUB):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( SUBx )
             %continue
 
 c(iCodeCONCAT):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( CONCx )
             %continue
 
 c(iCodeQUOT):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( DIVx )
             %continue
 
 c(iCodeLOCATE):
             ! Define compiler label
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Define Compiler Label( temp tag )
             %continue
 
 c(iCodeEND):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             End of Block
             %exit
 
 c(iCodeJL):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, LT )
             %continue
 
 c(iCodeJE):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, EQ )
             %continue
 
 c(iCodeJG):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, GT )
             %continue
 
 c(iCodeCOMPARE):
             ! Compare values
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Compare Values
             %continue
 
 c(iCodePUSH):
             ! Stack variable descriptor (calls Stack Var)
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '"' )
+                printstring( get symbol name( temp tag ) )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Stack Var( temp tag )
             %continue
 
 c(iCodeINIT):
             ! Initialise OWN variable
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+
+                newline
+            %finish
+
             Init( temp tag )
             %continue
 
 c(iCodeREPEAT):
             ! Backward Jump
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write( temp tag, 0)
+
+                newline
+            %finish
+
             jump to( temp tag, JMP, 0);
             %continue
 
 c(iCodeCOMPAREA):
             ! Compare addresses
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Compare Addresses
             %continue
 
 c(iCodePUSHR):
             ! Stack real constant
+            temp longreal = ReadReal
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                print fl( temp longreal,8 )
+
+                newline
+            %finish
+
             Input Real Value( temp longreal )
             %continue
 
 c(iCodeCALL):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Compile Call( top )
             %continue
 
 c(iCodeGOTO):
             ! Forward Jump
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, Always )
             %continue
 
 c(iCodeALIAS):
             ! Alias for item about to be declared
+            temp string = ReadString
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '"' )
+                printstring( temp string )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Alias = temp string
             %continue
 
 c(iCodeBEGIN):
             ! Start of BEGIN block
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Compile Begin
             %continue
 
 c(iCodeJUMP):
             ! Jump to user label
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printstring( get symbol name( temp tag ) )
+
+                newline
+            %finish
+
             dumpjump(JMP, user label( temp tag ))
             %continue
 
 c(iCodeFALSE):
             ! %false
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Return( False )
             %continue
 
 c(iCodeLABEL):
             ! Define user label
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printstring( get symbol name( temp tag ) )
+
+                newline
+            %finish
+
             dump label(user label( temp tag ))
             %continue
 
 c(iCodeMAP):
             ! MAP result
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Return( Map )
             %continue
 
 c(iCodePUSHI):
             ! Load integer constant (calls Push Const)
+            temp integer = ReadInteger
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp integer,0)
+
+                newline
+            %finish
+
             push const( temp integer )
             %continue
 
 c(iCodeLINE):
             ! Set line number
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag, 0)
+
+                newline
+            %finish
+
             Update Line( temp tag )
             %continue
 
 c(iCodePLANT):
             ! Machine code literal
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Plant
             %continue
 
 c(iCodeDIVIDE):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( RDIVx )
             %continue
 
 c(iCodeRETURN):
             ! RETURN
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Return( Routine )
             %continue
 
 c(iCodeASSVAL):
             ! Normal value assignment
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Assign( 1 )
             %continue
 
 c(iCodeTRUE):
             ! %true
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Return( True )
             %continue
 
 c(iCodeNEGATE):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( NEGx )
             %continue
 
 c(iCodeRESULT):
             ! FN result
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Return( Fn )
             %continue
 
 c(iCodeSJUMP):
             ! Jump to switch
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '"' )
+                printstring( get symbol name( temp tag ) )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Switch Jump( temp tag )
             %continue
 
 c(iCodeIEXP):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( EXPx )
             %continue
 
 c(iCodeASSREF):
             ! Assign address '=='
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Assign( 0 )
             %continue
 
 c(iCodeLSH):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( LSHx )
             %continue
 
 c(iCodeNOT):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( NOTx )
             %continue
 
 c(iCodeRSH):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( RSHx )
             %continue
 
 c(iCodeSETFORMAT):
             ! {Set Format}
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '=' )
+                printsymbol( '"' )
+                printstring( get symbol name( temp tag ) )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Set Record Format( temp tag )
             %continue
 
 c(iCodeSLABEL):
             ! Define switch label
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( '"' )
+                printstring( get symbol name( temp tag ) )
+                printsymbol( '"' )
+
+                newline
+            %finish
+
             Switch Label( temp tag )
             %continue
 
 c(iCodeACCESS):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Array Ref( 0 )
             %continue
 
 c(iCodeBOUNDS):
             ! Define constant bounded Dope Vector
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Constant Bounds
             %continue
 
 c(iCodeALTNEXT):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             AlternateNext
             %continue
 
 c(iCodeDIM):
             ! dimensions, count of variables
             ! NB in params:  =0 -> simple array,  # 0 -> array-in-record
+            temp tag = ReadTagComma
+            temp count = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+                printsymbol( ',' )
+                write( temp count,0)
+
+                newline
+            %finish
+
             Dimension( temp tag, temp count )
             %continue
 
 c(iCodeEVENT):
             ! %signal event
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+
+                newline
+            %finish
+
             Internal Handler ( temp tag )
             %continue
 
 c(iCodeFOR):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+
+                newline
+            %finish
+
             Compile For( temp tag )
             %continue
 
 c(iCodeALTSTART):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             AlternateStart
             %continue
 
 c(iCodeALTEND):
             ! do nothing but pop out of the loop
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             %exit
 
 c(iCodeINDEX):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Array Ref( 1 )
             %continue
 
 c(iCodeJAM):
             ! JAM transfer
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Assign( 2 )
             %continue
 
 c(iCodeJZ):
             ! Branch on FALSE (= 0)
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, FF )
             %continue
 
 c(iCodeLANG):
             ! We currently only support standard IMP - who knows the future
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag, 0 )
+
+                newline
+            %finish
+
             Language Flags = temp tag
             %continue
 
 c(iCodeMONITOR):
             ! %monitor
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Monitor
             %continue
 
 c(iCodeSELECT):
             ! Select member from record format
+            temp tag = ReadTag
+
+            ! Select member from record format
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+
+                newline
+            %finish
+
             SelectField( temp tag )
             %continue
 
 c(iCodeON):
             ! %on %event block
+            temp tag = ReadTagComma
+            temp evfrom = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag,0)
+                printsymbol( ',' )
+                write( temp evfrom,0)
+
+                newline
+            %finish
+
             EventTrap( temp tag, temp evfrom )
             %continue
 
 c(iCodeASSPAR):
             ! Pass a parameter
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Assign( -1 )
             %continue
 
 c(iCodeSUBA):
             ! --
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             DoubleOp( SUBx )
             %continue
 
 c(iCodeRESOLVE):
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag, 0)
+
+                newline
+            %finish
+
             Resolve( temp tag )
             %continue
 
 c(iCodeSTOP):
             ! %stop
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             perm( stop, 0 )
             %continue
 
 c(iCodeJNZ):
             ! Branch on TRUE (# 0)
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( 'L' )
+                write(temp tag,0)
+
+                newline
+            %finish
+
             Jump Forward( temp tag, TT )
             %continue
 
 c(iCodeADDA):
             ! ++
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             DoubleOp( ADDx )
             %continue
 
 c(iCodeMOD):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( ABSx )
             %continue
 
 c(iCodeMCODE):
             ! JDM JDM: escape to machine assembler code
+            temp string = Get Ascii( ';' )
+
+            ! JDM JDM: escape to machine assembler code
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                spaces(4)
+                showMcode( temp String )
+
+                newline
+            %finish
+
             Machine Code( temp string )
             %continue
 
 c(iCodeREXP):
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Operation( REXPx )
             %continue
 
 c(iCodeDIAG):
             ! %diagnose n (what about pass3? how do we send to pass3)
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag, 0)
+                newline
+            %finish
+
             Set Diagnose( temp tag )
             %continue
 
 c(iCodeCONTROL):
             ! %control n
+            temp tag = ReadTag
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                write( temp tag, 0)
+                newline
+            %finish
+
             Set Control( temp tag )
             %continue
 
 c(iCodeSTART):
             ! Start of formal parameters
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             Start Params
             %continue
 
 c(iCodeFINISH):
             ! End of formal parameters
+            %if (dumpIcode # 0) %start
+                ListICode
+
+                newline
+            %finish
+
             %exit %if Finish Params
             %continue
 
 c(iCodeALT):
             ! alternate record format
+            temp tag = ReadByte
+
+            %if (dumpIcode # 0) %start
+                ListICode
+                spaces(4)
+                printsymbol( temp tag )
+                newline
+            %finish
+
             %exit %if AlternateFormat( temp tag )
             %continue
 
@@ -8536,6 +8429,12 @@ c( * ):
 
         ! Is there a shell variable (IMP_DIAGNOSE=NNN) override for diagnose?
         diagnose = get env as integer( "IMP_DIAGNOSE" )
+
+        %if (options&XX Show ICode # 0) %or (diagnose&16 # 0) %start
+            dumpICode = 1
+        %finish %else %start
+            dumpIcode = 0
+        %finish
 
         ! JDM JDM - Before we do any file I/O we need to get the source file name
         ! (as used to feed the 'source' stream)

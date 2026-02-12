@@ -2825,11 +2825,11 @@ c(165):     { NLAB }
                     { So push the array data onto the array reference stack }
                     aref count = aref count + 1
                     %if (1 <= aref count <= aref max ) %start
-
                         s == aref(aref count)
                         s_name = get ident ( x )
                         s_flags  = tag(x)_flags
                         s_format = tag(x)_format
+                        s_index = tag(x)_index
                     %finish
                 %finish
             %finish
@@ -2888,10 +2888,11 @@ c(const):   { CONST [constant] ==93 }
                         { an integer value in the lit pool() }
                         { get the pointer to the litpool() entry }
                         { DANGER glink() is a %shortarray }
-                        { so ensure we extract a %short value }
-                        { by ANDing with x'ffff' }
-                        { implemented by the "do push" and "do access" code }
+                        { iCode ACCESS understands %byte and %short index values }
+                        { %byte value zero extended to an %integer index value }
+                        { %short value sign-extended to an %integer index value }
                         add operation('@', litpool(glink(x+1)))
+
                         %exit
                     %finish %else add char( j )
                 %repeat
@@ -2905,30 +2906,9 @@ c(137):     { ASEP }
             ->top
 
 c(141):     { ARB }
-            add char( iCodeACCESS )
-
-            { Now to test for nested array references }
-            { Ass-u-me the worst case scenario }
-            s == nil
-
-            { Explicitly pop the array reference stack }
-            %if (1 <= aref count <= aref max ) %start
-                s == aref( aref count )
-
-                { check if this is an ACCESS to either a %byte or %short array }
-                { so we can coerce array value to the appropriate 'integer' range }
-                %if (aref count > 1) %and (s_flags>>4&7 = 1) %and (2 <= s_format <= 3) %start
-                    { check for a nested %byteintegerarray }
-                    set const(255) %if (s_format = 2)
-
-                    { check for a nested %shortintegerarray }
-                    set const(65535) %if (s_format = 3)
-
-                    { now convert to the appropriate bit size }
-                    add char( iCodeAND )
-                %finish
-            %finish
+            { pop the array reference }
             aref count = aref count - 1
+            add char( iCodeACCESS )
             ->top
 
             { own arrays }
