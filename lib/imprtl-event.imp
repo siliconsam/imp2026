@@ -21,14 +21,14 @@
         eventmsg = "(".e.",".s.",".x.")"
 
         ! For the main ones we generate, try to be helpful...
-        -> esw(event) %if (0 < event < max event)
+        -> esw(event) %if (0 <= event < max event)
         -> esw(max event - 1)
     esw(0):
         %begin
            ! sub value has full integer range
-           %if (sub < 0) %then msg = "Abandon program, sauve qui puet!"
+           %if (sub < 0) %then msg = "Abandon program, sauve qui peut!"
            %if (sub = 0) %then msg = "%stop"
-           %if (sub > 0) %then msg = "User generated error. ".s
+           %if (sub > 0) %then msg = "User generated error. ".x
         %end
         -> esac
     esw(1):
@@ -195,7 +195,11 @@
     mess(5): printstring( "End of Stack dump" )
              -> esac
     mess(6): printstring( "Stopping program with exit status=" )
-             printstring( sub )
+             printstring( xtr )
+             -> esac
+    mess(7): printstring( "Stopping program with exit status=" )
+             printstring( xtr )
+             printstring( " with message '".lastevent_message."'" )
              -> esac
     mess(*): printstring( "Unknown message# given." )
              -> esac

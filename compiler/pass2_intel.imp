@@ -1004,7 +1004,7 @@
                 show(stack(j))
             %repeat
         %finish
-        %signal 0,-1
+        %signal 0,-1,-1
     %end { of "abort" }
 
     { ---------------------------------------------------------------- }
@@ -1038,6 +1038,7 @@ at:
     {                                                  >> MONITOR <<   }
     { ---------------------------------------------------------------- }
     %routine  monitor(%record(stackfm)%name  v, %string(15) text)
+
         select output(report)
         print string(text)
         print symbol(':')
@@ -4229,8 +4230,8 @@ out1:
                 -6, V in REC, -7, -8,      -9, -10, {PGM LABEL} -11, {record format} -12
 
             ! ABD - should be code here to deal with ADDR(pgm label)
-
             f = addr map(v_form)
+
             %if (f < 0) %start
                 monitor(v, "AMAP target")
                 abort("AMAP")
@@ -4456,6 +4457,7 @@ out1:
             %finish %else %start
                 hazard(r)
             %finish
+
             -> f(v_form)
 
 f(V in REC):

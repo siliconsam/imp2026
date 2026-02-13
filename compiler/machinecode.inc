@@ -481,6 +481,26 @@
     %result = opId
 %end
 
+%routine ShowMCode( %string(255) code )
+    %integer i
+
+    ! Machine specific decode
+    parseMachineCode( code )
+
+    printstring( instruction )
+    %if (params count # 0) %start
+        printsymbol( ' ' )
+
+        ! now to show each parameter
+        %for i = 1,1,params count %cycle
+            %if (i > 1) %start
+                printsymbol( ',' )
+            %finish
+            printstring( params(i)_data )
+        %repeat
+    %finish
+%end
+
 %routine abortmcode( %string(5) instruction, %string(255) message)
     abort( "ERROR: ".instruction." ".message )
 %end
@@ -813,7 +833,7 @@
 
     ! ok, lets go
     ! First, parse the machine code text
-!    parseMachineCode( code )
+    parseMachineCode( code )
 
     ! Next, check that we have a valid instruction
     opId = validateMachineCode( instruction )

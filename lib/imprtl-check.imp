@@ -51,15 +51,4 @@
         %finish
     %end
 
-    { Sign extend a %short into an %integer }
-    %external %routine s2i( %short s )
-        *movsx_ %EAX,s
-    %end
-
-    { Zero extend a %byte into an %integer }
-    %external %routine b2i( %byte b )
-        *mov_ %EAX,b
-        *and_ %eax,#255
-    %end
-
 %endoffile

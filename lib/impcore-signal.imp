@@ -40,59 +40,71 @@
     ! Remember the event data and form the event message
     save event( line, event, sub, info )
 
-    ! try to find our own base pointer...
-    ! We have to use embedded machine code
-    ! to read the Frame Pointer/Base Pointer
-    *mov_ mybp,%ebp
+    %if (event = 0) %start
+        ! We want to escape this program
+        status = info
 
-    ! make a copy of the current frame
-    chainbp == mybp
-
-    ! Now chainbp_xret is a code address in the IMP program.
-    ! We trace back the stack until we find a valid trap block
-    ! or we've been nested too deeply (i.e. panic cout)
-    ! or we reach the IMP program entry point
-    panic = 0
-    %cycle
-        ! Increase the pressure to find a valid trap entry
-        panic = panic + 1
-
-        ! First, set up the loop success exit as we traverse the stack
-
-        ! Can we find a handler to catch the event?
-        ! JDM: We must match the event trapbits
-        ! and the address inside the "defence" zone
-        %if handler found ( event, chainbp_xret ) %start
-
-            ! Yes, so overwrite the Frame Pointer and return address
-            { set my return BP to the trappers BP }
-            mybp_xebp == chainbp_xebp
-            { and my return location is the trap }
-            mybp_xret = handler entry address( chainbp_xret )
-
-            %return                    { kazzam! }
+        %if (sub = 0) %start
+            ! %signal 0,0,n  == %stop with exit status == n
+            messageFormatA( 6 ) %if show debug
+        %finish %else %start
+            messageFormatA( 7 )
         %finish
 
-        ! Next set up the loop failure exits as we traverse the stack
-        ! All these loop exit tests mean we'll have to do a stack dump.
+        exit( info )
 
-        ! Drat! we are at the entry level into the IMP program
-        %exit %if initial entry found ( chainbp_xret )
+    %finish %else %start
+        ! try to find our own base pointer...
+        ! We have to use embedded machine code
+        ! to read the Frame Pointer/Base Pointer
+        *mov_ mybp,%ebp
 
-        ! Drat!, We've been looking too many times
-        %exit %if (panic > 20)
+        ! make a copy of the current frame
+        chainbp == mybp
 
-        ! Double drat! We've gone too far down the chain
-        %exit %if (chainbp_xret = 0)
+        ! Now chainbp_xret is a code address in the IMP program.
+        ! We trace back the stack until we find a valid trap block
+        ! or we've been nested too deeply (i.e. panic cout)
+        ! or we reach the IMP program entry point
+        panic = 0
+        %cycle
+            ! Increase the pressure to find a valid trap entry
+            panic = panic + 1
 
-        ! Ok, we keep on looking and examine the previous stack frame
-        chainbp == chainbp_xebp  
-    %repeat
+            ! First, set up the loop success exit as we traverse the stack
 
-    ! If we get here, we didn't find a willing catcher,
-    ! so instead we'll print a diagnostic stack dump and then exit
-    %if (event # 0) %start { Don't report a normal %stop }
+            ! Can we find a handler to catch the event?
+            ! JDM: We must match the event trapbits
+            ! and the address inside the "defence" zone
+            %if handler found ( event, chainbp_xret ) %start
 
+                ! Yes, so overwrite the Frame Pointer and return address
+                { set my return BP to the trappers BP }
+                mybp_xebp == chainbp_xebp
+                { and my return location is the trap }
+                mybp_xret = handler entry address( chainbp_xret )
+
+                %return                    { kazzam! }
+            %finish
+
+            ! Next set up the loop failure exits as we traverse the stack
+            ! All these loop exit tests mean we'll have to do a stack dump.
+
+            ! Drat! we are at the entry level into the IMP program
+            %exit %if initial entry found ( chainbp_xret )
+
+            ! Drat!, We've been looking too many times
+            %exit %if (panic > 20)
+
+            ! Double drat! We've gone too far down the chain
+            %exit %if (chainbp_xret = 0)
+
+            ! Ok, we keep on looking and examine the previous stack frame
+            chainbp == chainbp_xebp  
+        %repeat
+
+        ! If we get here, we didn't find a willing catcher,
+        ! so instead we'll print a diagnostic stack dump and then exit
         messageFormatA( 1 )
 
         ! We've already initialised our stack traceback to look for
@@ -125,18 +137,10 @@
         messageFormatA( 3 )
 
         status = 1
-    %finish %else %start
-        status = info
 
-        %if (info = 0) %start
-            ! %signal 0,0,n  == %stop with exit status == n
-            messageFormatA( 6 ) %if show debug
-        %finish %else %start
-            messageFormatA( 3 )
-        %finish
+        impexit( status )
     %finish
-
-    impexit( status )
+    
 %end { of "impsignal" }
 
 {-----------------------------------------------------------------------------}

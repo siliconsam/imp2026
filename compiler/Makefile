@@ -30,22 +30,6 @@ OBJS=impdriver.o \
      incfile.o \
      buffer.o 
 
-#IBJS=takeon.ibj \
-#     impdriver.ibj \
-#     pass1_i77.ibj \
-#     pass2_intel.ibj \
-#     ibj.utils.ibj \
-#     icd.utils.ibj \
-#     buffer.ibj
-
-#IMPS=takeon \
-#     impdriver \
-#     pass1_i77 \
-#     pass2_intel \
-#     ibj.utils \
-#     icd.utils \
-#     buffer
-
 all: takeon impdriver
 > @echo "Completed compiler make ALL"
 
@@ -61,7 +45,7 @@ bootstrap: takeon.o $(OBJS) $(IMP_LIB) $(LD_SCRIPT)
 
 # Now build the programs
 > @$(CC) -o takeon takeon.o   $(LINK_OPT)
-> @$(CC) -o impdriver $(OBJS) $(LINK_OPT)
+> @$(CC) -o impdriver $(LIB_DIR)/imprtl-main.o $(OBJS) $(LINK_OPT)
 
 # Lastly install the two programs
 > @install -t ${BIN_DIR} takeon
@@ -70,7 +54,7 @@ bootstrap: takeon.o $(OBJS) $(IMP_LIB) $(LD_SCRIPT)
 
 rebuild: i77.tables.inc $(OBJS)
 # Now build the programs
-> @$(CC) -o impdriver $(OBJS) $(LINK_OPT)
+> @$(CC) -o impdriver $(LIB_DIR)/imprtl-main.o $(OBJS) $(LINK_OPT)
 > @echo "Completed compiler make REBUILD"
 >
 
@@ -114,19 +98,12 @@ i77.tables.inc: i77.grammar takeon
 > @echo "Completed compiler make I77.TABLES.INC"
 
 impdriver: i77.tables.inc $(OBJS)
-> @${CC} -o impdriver $(OBJS) $(LINK_OPT)
+> @${CC} -o impdriver $(LIB_DIR)/imprtl-main.o $(OBJS) $(LINK_OPT)
 > @echo "Completed compiler make IMPDRIVER"
-
-%.o: %.c
-> @$(CC) -c $(CCFLAGS) $<
 
 %.o: %.ibj
 > @echo "Using pass3elf to create `basename $< .ibj`.o from $<"
 > @${IMP_INSTALL_HOME}/bin/pass3elf `basename $< .ibj`.ibj `basename $< .ibj`.o
-
-%.ibj: %.imp
-> @echo "Using imp77 script to create `basename $< .imp`.o from $<"
-> @${IMP_INSTALL_HOME}/bin/imp77 -c -Fc -Fs -Fi $<
 
 %.o: %.imp
 > @echo "Using imp77 script to create `basename $< .imp`.o from $<"
