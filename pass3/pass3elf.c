@@ -2750,7 +2750,7 @@ void dumpobjectfile( char *inname, char *outname )
     inname[i - 1] = 0;
 
     // Now open the output file
-    out = fopen(inname, "wb");
+    out = fopen(outname, "wb");
     if (out == NULL)
     {
         perror("Can't open output file");
@@ -2801,7 +2801,7 @@ int main(int argc, char **argv)
     int i;
     int datasize;
 
-    if ((argc != 2) && (argc != 3))
+    if (argc != 3)
     {
         fprintf(stderr, "Unexpected number of parameters for PASS3ELF!\n\n");
         fprintf(stderr, "Usage:  PASS3 <intermediatefile> <objfile>?\n");
@@ -2841,14 +2841,7 @@ int main(int argc, char **argv)
 
     remapspecs();
 
-    if (argc == 2)
-    {
-        dumpobjectfile( argv[1], argv[1] );
-    }
-    else
-    {
-        dumpobjectfile( argv[1], argv[2] );
-    }
+    dumpobjectfile( argv[1], argv[2] );
 
     fprintf(stderr, "\n\n");
     fprintf(stderr, " ELF object file generated from IMP source file: '%s'\n",path_buffer);
