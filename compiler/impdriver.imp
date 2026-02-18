@@ -6,7 +6,8 @@
 
     %integer No stats, No Faults, No Warnings
     %integer Options
-    %string(255) imp source, imp defs, imp mode
+    %string(255) imp param, imp defs, imp mode
+    %string(255) imp source, imp prefix, imp extension
     %string(255) def file, imp file, icd file, ibj file, list file, code file
 
     %include "Stream3L.inc"
@@ -26,21 +27,44 @@
 !    printstring("ARG#=");write(getargcount,0);newline
 !    printstring("PROG=".getarg(0));newline
 
-    %if (getargcount >= 3) %start
-        imp defs   = getarg(1)
-        imp source = getarg(2)
-        imp mode   = getarg(3)
+    imp defs   = ""
+    imp source = ""
+    imp mode   = ""
+    imp defs   = getarg(1) %if (getargcount > 1)
+    imp source = getarg(2) %if (getargcount > 2)
+    imp mode   = getarg(3) %if (getargcount > 3)
 
 !printstring("DEFS=".imp defs);newline
 !printstring(" SRC=".imp source);newline
 !printstring("MODE=".imp mode);newline
 
-        def file  = imp defs.".imp"
-        imp file  = imp source.".imp"
-        icd file  = imp source.".icd"
-        ibj file  = imp source.".ibj"
-        list file = imp source.".lst"
-        code file = imp source.".cod"
+    %if (imp defs # "") %and (imp source # "") %start
+
+        def file  = imp defs
+        %if imp source -> imp prefix.(".imp") %start
+            imp extension = ".imp"
+        %finish %else %if imp source -> imp prefix.(".i") %start
+            imp extension = ".i"
+        %finish %else %start
+            printstring("Illegal file extension. Legal values are (.i .imp)")
+            newline
+            imp prefix = ""
+            imp extension = ""
+            exit(1)
+        %finish
+
+        def file  = imp defs
+        imp file  = imp prefix.imp extension
+        icd file  = imp prefix.".icd"
+        ibj file  = imp prefix.".ibj"
+        list file = imp prefix.".lst"
+        code file = imp prefix.".cod"
+
+!printstring("IMP FILE=".imp file); newline
+!printstring("ICD FILE=".icd file); newline
+!printstring("IBJ FILE=".ibj file); newline
+!printstring("LiST FILE=".list file); newline
+!printstring("CODE FILE=".code file); newline
   
         No Stats = 0
         No Warnings = 0
@@ -50,10 +74,10 @@
         options = options!XX Show ICode %if (get env as integer( "IMP_DIAGNOSE" )&16 # 0)
 
         %if run pass( imp mode, "pass1" ) %start
-            open input( source, impfile )
+            open input( source, imp file )
             open input( predef in, def file )
-            open binary output( icode out, icdfile )
-            open output( listing, listfile )
+            open binary output( icode out, icd file )
+            open output( listing, list file )
             select input( predef in )
 
             PASS1(No stats, No Faults, No Warnings, Options)
@@ -98,7 +122,9 @@
                                                                          newline
 !        print string( "    Optional parameters" );                       newline
 !        print string( "    Arg(3): If present => %short == 2 bytes" );   newline
-!                                                                         newline
+!    
+         newline
+         exit(-1)
     %finish
 
 %end { of "impdriver" }

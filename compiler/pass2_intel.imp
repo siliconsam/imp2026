@@ -5825,8 +5825,8 @@ roper(EXPx):
                     dumprepmovsb
                 %finish
 !                ! Free up the EDI, ESI registers after this record assignment
-!                release(DI)
-!                release(SI)
+!                release(EDI)
+!                release(ESI)
                 pop rel
                 pop rel
                 %return
@@ -5882,6 +5882,16 @@ roper(EXPx):
             store(lh, rh)
             pop rel
             pop rel
+
+!            { for value assignment }
+!            %if (assop >= 0) %start
+!                { we want to free up/release most registers }
+!                release( ECX )
+!                release( EDX )
+!                release( EBX )
+!                release( EDI )
+!                release( ESI )
+!            %finish
         %end { of "assign" }
 
         !                                                      >> ARRAY REF <<

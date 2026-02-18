@@ -58,54 +58,64 @@ if [ $# -ne 1 ]; then
 fi
 
 # Determine a possible filename to compile
-FILENAME=
 SRCNAME=
+EXTENSION=
 
-# See if the parameter omitted the .imp file extension
 if [ -e $1.imp ]; then
-	FILENAME=$1.imp
-    SRCNAME=$1
-fi
-
-# See if the parameter omitted the .i file extension
-if [ -e $1.i ]; then
-    FILENAME=$1.i
-    SRCNAME=$1
-fi
-
-# See if the parameter accidentally included a file extension
-if [ -e $1 ]; then
-
-    # try to be ambivalent about which extension is used
-    SRCNAME=`basename $1 .imp`
-    SRCNAME=`basename $SRCNAME .i`
-
-    # and now check that there was one (and it's been removed)
-    if [ X"$SRCNAME.imp" != X"$1" ] && [ X"$SRCNAME.i" != X"$1" ]; then
-        echo "${PROGNAME}: The source parameter $1 has an invalid file extension" 1>&2
-        echo "${PROGNAME}: Legal file extensions are one of (.imp, .i)" 1>&2
-	    exit 1
+    # See if the parameter omitted the .imp file extension
+	SRCNAME=$1
+    FILENAME=`realpath $1.imp`
+else
+    if [ -e $1.i ]; then
+        # See if the parameter omitted the .i file extension
+        SRCNAME=$1
+        FILENAME=`realpath $1.i`
     else
-        FILENAME=$1
+        if [ -e $1 ]; then
+            SRCDIR=`dirname $1`
+            if [[ "${SRCDIR}" == "." ]]; then
+                SRCDIR=
+            else
+                SRCDIR=${SRCDIR}/
+            fi
+            case "$1" in
+            *.i)
+                # try to be ambivalent about which extension is used
+                SRCNAME=`basename $1 .i`
+                SRCNAME=${SRCDIR}${SRCNAME}
+                FILENAME=`realpath $1`
+                ;;
+            *.imp) 
+                # try to be ambivalent about which extension is used
+                SRCNAME=`basename $1 .imp`
+                SRCNAME=${SRCDIR}${SRCNAME}
+                FILENAME=`realpath $1`
+                ;;
+            *)  SRCNAME=
+                EXTENSION=
+                FILENAME=
+                ;;
+            esac
+        fi
     fi
-
 fi
 
-if [[ "${FILENAME}.imp" == ".imp" ]]; then
-    echo "${PROGNAME}: The source parameter $1 has an invalid file extension" 1>&2
+if [[ "${FILENAME}" == "" ]]; then
+    echo "${PROGNAME}: The source parameter $1 does not have a valid file extension" 1>&2
     echo "${PROGNAME}: Legal file extensions are one of (.imp, .i)" 1>&2
     exit 1
 fi
 
 if ${TEST_MODE}; then
-  INC_DIR=${TEST_DIR}/include
+  INC_DIR=${TEST_DIR}/lib
 #  P1_PROG=${TEST_DIR}/compiler/pass1
 #  P2_PROG=${TEST_DIR}/compiler/pass2
   P1_PROG=${TEST_DIR}/compiler/impdriver
   P2_PROG=
-  P3_PROG=${TEST_DIR}/pass3/pass3elf
+  P3_PROG=${RELEASE_DIR}/bin/pass3elf
   LD_SCRIPT=${TEST_DIR}/pass3/ld.i77.script
   LIB_DIR=${TEST_DIR}/lib
+  PERM_FILE=${INC_DIR}/stdperm.imp
 else
   INC_DIR=${RELEASE_DIR}/include
 #  P1_PROG=${RELEASE_DIR}/bin/pass1
@@ -115,6 +125,7 @@ else
   P3_PROG=${RELEASE_DIR}/bin/pass3elf
   LD_SCRIPT=${RELEASE_DIR}/bin/ld.i77.script
   LIB_DIR=${RELEASE_DIR}/lib
+  PERM_FILE=${INC_DIR}/stdperm.imp
 fi
 
 if ${HEAP_MODE}; then
@@ -141,9 +152,9 @@ else
     CODEFILE=/dev/null
 fi
 
-${P1_PROG} ${INC_DIR}/stdperm ${SRCNAME}
+${P1_PROG} ${PERM_FILE} ${FILENAME}
 if [ $? -ne 0 ] ; then
-    echo "imp77: Compilation failure in ${P1_PROG} for $1"
+    echo "imp77: Compilation failure in ${P1_PROG} for ${SRCNAME}${EXTENSION}"
 	exit 1
 fi
 
