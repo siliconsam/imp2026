@@ -17,8 +17,8 @@
 %prim     %record(*)      %map  %spec   record( %integer n )
 %prim     %real           %map  %spec   real( %integer n )
 %prim     %long %real     %map  %spec   longreal( %integer n )
-%prim     %byte %integer  %map  %spec   length( %string(255) s )
-%prim     %byte %integer  %map  %spec   charno( %string(255) s,%integer n )
+%prim     %byte %integer  %map  %spec   length( %string(*) %name s )
+%prim     %byte %integer  %map  %spec   charno( %string(*) %name s,%integer n )
 %prim     %integer        %fn   %spec   int( %longreal r )
 %prim     %short %integer %map  %spec   shortinteger( %integer n )
 
