@@ -1284,10 +1284,10 @@ strings:        atom1 = var
                 { a string constant is ok here, so pull it in and get }
                 { the next atom }
 
-text:           ->chars %if (quote < 0)                 { character consts }
-                l = strp                                { point to beginning }
-                k = 0                                   { length so far }
-                flipflop = 0                            { space for the length is up the spout }
+text:           ->chars %if (quote < 0)    { character consts }
+                l = strp                   { point to beginning }
+                k = 0                      { length so far }
+                flipflop = 0               { space for the length is up the spout }
 
                 %cycle
                     cont = squote
@@ -1295,8 +1295,29 @@ text:           ->chars %if (quote < 0)                 { character consts }
                     %cycle
                         read sym
                         %if (sym = squote) %start           { terminator? }
-                            %exit %if (nextsymbol # squote) { yes -> }
-                            read sym                        { skip quote }
+                            { Now to defend against }
+                            { either a repeated '"'  }
+                            { or a string concatenation '.' }
+                            %exit %if (nextsymbol # squote) %and (nextsymbol # '.') { yes -> }
+                            { At this point we have }
+                            { either a repeated '"', an embedded " char }
+                            { or a '.' for string concatenation }
+                            %if (nextsymbol = squote) %start
+                                { It's a repeated " }
+                                { so, skip over this instance of squote }
+                                { but we'll have a single squote to insert }
+                                read sym
+                            %finish %else %start
+                                { looks like we are closing the current string }
+                                { BUT, we are concatenating to another string }
+                                { So, skip the current terminating quote }
+                                read sym
+                                { Next, skip the '.' concatenation operator }
+                                { and search for the start of the next string }
+                                read sym %until (sym = squote)
+                                { skip over the opening squote for the next string }
+                                read sym
+                            %finish
                         %finish
                         %if (flipflop >= 0) %start
                             glink(strp) = sym<<8 + flipflop
@@ -1666,7 +1687,7 @@ act(195):   { %OPER [8 - check operator type] }
             force = integer %if (k = 3)
             ->more
 
-act(198):   { %OTHER [3,4,9 - sundry others] }
+act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
             k = gg>>8&15
             %if (k = 0) %start      { restore atom }
                 atom1 = last1
@@ -1689,6 +1710,7 @@ act(198):   { %OTHER [3,4,9 - sundry others] }
                 ->more
 
             %finish
+
             for warn = pos1 %if (x <= local)    { %for TEST }
             ->more
 
@@ -2481,10 +2503,13 @@ c(46):      { UOP }
             ->top
 
 c(47):      { MOD }
-c(48):      { DOT }
 c(42):      { OP1 }
 c(43):      { OP2 }
 c(44):      { OP3 }
+            add char( operator(x) )
+            ->top
+
+c(48):      { DOT }
             add char( operator(x) )
             ->top
 
