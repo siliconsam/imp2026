@@ -11,7 +11,7 @@ Imp code examples are now in the "imp_examples" Git repository.
 Imp tools sources are now in the "imp_tools" Git repository.
 
 Enhancements:
-    1) The run-time library reports line numbers and source module names in stack trace
+    1) The run-time library reports line numbers and source module names in a stack trace
        triggered by an IMP signal that has no event handler.
     2) The IMP compiler executables (and library) by default are in the same folder structure as the compiler source
 
@@ -24,7 +24,7 @@ This distribution contains:-
 
 COMMON PRE-REQUISITES
 
-* Copy of the IMP2024 git repository on your Windows/Linux/WSL machine
+* Copy of the IMP2026 git repository on your Windows/Linux/WSL machine
 
 PRE-REQUISITES FOR LINUX
 
@@ -83,64 +83,72 @@ Be aware of the possible tweaks mentioned above.
 
 The compiler can be "bootstrapped" by running the appropriate bootstrap script in the imp2026 top folder.
 
-The order of bootstrapping is...
+The commands to run in order for bootstrapping are...
 
-    * build the pass3 program (used to generate the Elf .o files from .ibj files)
-        The pass3elf program is compiled from the pass3elf.c source (generates .rel relocations)
-        N.B. the pass3coff.c program generates Windows COFF files from the same .ibj input.
+    * 1) run setenv.sh (or setenv.bat)
+        This sets up the environment variables used by the various scripts
+        ALWAYS run this "setenv" script once before using the IMP20xx compiler.
 
-    * cd imp20XX/pass3
-    * make install
+    * 2) run bootstrap.sh (or bootstrap.bat)
+        2.1) This firstly builds the pass3 programs (used to generate the Elf .o files from .ibj files)
+            2.1.1) Change folder to imp20xx/pass3
+            2.1.2) For Linux
+                2.1.2.1) make install
+            2.1.3) For Windows
+                2.1.3.1) make_pass3 install
+            The pass3elf program is compiled from the pass3elf.c source (generates .rel relocations)
+            The pass3coff.c program generates Windows COFF files from the same .ibj input.
+            The pass3 programs and imp77 script are stored in the imp20xx/release/bin folder
 
-    * # build the library
-	* cd ../lib
-	* make bootstrap
+        2.2) To make the IMP run-time library
+            2.2.1) Change folder to imp20xx/lib
+            2.2.2) For Linux
+                2.2.2.1) make bootstrap
+            2.2.3) For Windows
+                2.2.3.1) make_lib bootstrap
+            This builds the imp run-time library.
+            It stores the library and imprtl-main object in imp20xx/release/lib
+        2.3) To build the imp20xx compiler (the impdriver program)
+            2.3.1) Change folder to imp20xx/compiler
+            2.3.2) For Linux
+                2.3.2.1) make bootstrap
+            2.3.3) For Windows
+                2.3.3.1) make_compiler bootstrap
+            This builds the impdriver program and stores it in imp20xx/release/bin
+        All the 2.x steps are done automatically by the bootstrap.sh/bootstrap.bat scripts
 
-    * # build the pass1, pass2 programs
-	* cd ../compiler
-    * make bootstrap
+    At this point an IMP20xx compiler has been built.
+    You can then logout and make a precautionary backup of the imp20xx folder tree.
+    
+    Please be aware that the Linux script setenv.sh creates a sub-process bash environment.
+    So to logout you need to exit twice.
 
-This should have installed the IMP compiler and libraries
-Next do a general tidy-up of the temporary files
-    * cd ../pass3
-    * make superclean
-    * cd ../lib
-    * make superclean
-    * cd ../compiler
-    * make superclean
+    
+    To compile an IMP source program:
+        On first logging in to a Linux/Windows process run the setenv.sh/setenv.bat script
+        Thereafter use the imp77 script to compile any IMP source.
+    To link multiple object files:
+        Use imp77link (follwed by a list of module names - omit the .o or .obj file extension)
 
-I strongly suggest you then make copies of:-
-    * the installed compiler (ass-u-med in <imp20XX>/release/bin)
-    * installed library (<imp20XX>/release/bin)
-    * installed include files. (<imp20XX>/release/include)
-    * the ../compiler folder
-    * the ../lib folder
+    NB Each makefile (or make_xxx.bat) has a superclean option to remove all temporary build files.
 
-Let me know if this bootstrapping step doesn't work (via a github notification),
-but only after you have tried all of the above installation "tweaks".
+    By default all text files use the UNIX/Linux CR line ending.
+    Install dos2unix (or use Notepad++) if needing to change Windows CR-LF line ending to CR line ending.
+
 Bootstrapping has been tested in:-
  1) a WSL version 2 environment (Debian and Ubuntu 22.04 LTS)
-    These environments use a later version of the GNU binutils package
+    These environments use the latest version of the GNU binutils package
  2) a Centos-7 virtual machine
     This uses an earlier version of the GNU binutils package
+ 3) a Windows 11 environment
+    
+Let me know if this bootstrapping step doesn't work (via a github issue),
+but only after you have tried all of the above installation "tweaks".
 
-Both the Centos + WSL environments needed tweaks to the default ld loader script.
-These are already located in the ld.i77.script.
-This script only copes with .rel relocation type.
 
-The pass3elf.c code generates .rel relocation entities.
-
-Currently the combination of pass3elf and ld.i77.script will generate working executables.
-However the creation of a shareable library (for the IMP RTL library code) generates 2 warnings:
-1) relocation data in read-only section '.text' 
-2) creating DT_TEXTREL in a PIE
-
-N.B. The "make bootstrap" command uses dos2unix to change the line-endings of various
-text files to have the UNIX/Linux CR line ending rather than Windows CR-LF line ending.
-The other make commands ass-u-me that text files have the CR line ending.
+EXTRA INFO (for the more curious souls)
 
 USER ENHANCEMENTS
-
 Once the initial bootstrap generation of the IMP library and compiler programs is complete then
 you can start to "enhance" the IMP compiler by modifying the source files in the compiler and lib folders.
 
@@ -173,6 +181,7 @@ bootstrap the IMP compiler.
 RUNNING THE IMP COMPILER
 The compiler is invoked by the imp77 shell script.
 The various options are:
+    * -e  Uses the experimental compiler build (in imp20xx/compiler and imp20xx/lib)
     * -c  This just generates the ELF object file (no linking to an executable)
     * -Fc Generates a .cod file which lists the code generated by the compiler
     * -Fs Generates a .lst file which indicates any syntax errors found
@@ -188,15 +197,14 @@ There is an additional script imp77link which can take an IMP program split
 into several Imp source files and individually generate the ELF object files
 before linking the ELF .o files into an executable.
 Examples of the use of imp77link are in various Makefile files
-1) in the compiler folder to build pass2
+1) in the compiler folder to build impdriver
 2) in the tools/ibj folder to build slimibj
 
 EXERCISE FOR USER
-As an exercise, create a new script "imp77elink" which uses the un-installed/testmode
-compiler and libraries 
+As an exercise, create a new script "imp77elink" which uses the un-installed/testmode library
  
 UTILITIES
-The Git repository "imp_tools" contains various utilities (in IMP and Free Pascal)
+The Git repository "imp_tools" contains various utilities (written in IMP and Free Pascal)
 These help to analyse the intermediate files (.icd, .ibj) generated by the compiler suite.
 The pass1 executable generates the .icd intermediate files.
 The pass2 executable generates the .ibj intermediate files.
@@ -229,4 +237,3 @@ andy@nb-info.co.uk
 Refreshed and enhanced by:
 John McMullin
 jdmcmullin@aol.com
-
