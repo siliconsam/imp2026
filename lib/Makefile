@@ -47,6 +47,7 @@ all: libimp77.a
 bootstrap: libimp77.a stdperm.imp
 # install the libraries and core include file
 > @install -t $(LIBDIR) libimp77.a
+> @install -t $(LIBDIR) imprtl-main.o
 > @#install -t $(LIBDIR) libimp77.so
 > @install -t $(INCDIR) stdperm.imp
 > @echo "Completed lib make BOOTSTRAP"
