@@ -1,5 +1,5 @@
 %constant %integer                      nl=10
-!%constant %integer                  	eof=-1
+!%constant %integer                 	eof=-1
 %const    %record(*)          %name 	nil == 0
 %constant %integer                      File Sep = '='
 %const %integer                         cMaxSigFigs = 15
@@ -28,14 +28,6 @@
 
 { Routine to map result of "typeof" function to a string }
 %external %string(255)    %fn   %spec   typeName( %integer t )
-
-{ These next 5 functions only work on those %name parameters which reference }
-{ an array's (Dope Vector Pointer,Array Data Address)                        }
-%external %integer        %fn   %spec   array entry size( %name n )
-%external %integer        %fn   %spec   array entry type( %name n )
-%external %integer        %fn   %spec   array dimensions( %name n )
-%external %integer        %fn   %spec   array lower bound( %name n, %integer index )
-%external %integer        %fn   %spec   array upper bound( %name n, %integer index )
 
 { Event handler routines }
 %recordformat event fm(%integer event,sub,info, line, %string(255) message)
@@ -74,6 +66,7 @@
 
 { Output routines }
 %external %integer       %fn    %spec   Output Stream
+%external %integer       %fn    %spec   Old Output Stream
 %external %string(255)   %fn    %spec   Output Name
 %external %routine              %spec   Select Output( %integer  n )
 %external %routine              %spec   Open Output( %integer  n,%string(255) fd )
@@ -84,18 +77,12 @@
 %external %integer       %fn    %spec   Tell Output
 %external %routine              %spec   Print Symbol( %integer sym )
 %external %integer      %fn     %spec   Write Buffer( %name ptr, %integer count )
-%external %routine              %spec   Debug Symbol( %integer sym )
-%external %routine              %spec   Debug Real( %longreal d )
 %external %integer       %fn    %spec   Get Max Output Stream
 %external %routine              %spec   Flush Output
 
 { Core routines implemented in IMP }
 %external %routine              %spec   Skip Symbol
 %external %routine              %spec   print string( %string(255)  s )
-%external %routine              %spec   debug string( %string(255)  s )
-%external %routine              %spec   debug newline
-%external %routine              %spec   debug space
-%external %routine              %spec   debug spaces( %integer count)
 %external %routine              %spec   write( %integer  v,p )
 %external %routine              %spec   space
 %external %routine              %spec   spaces( %integer  n )
@@ -136,6 +123,14 @@
 %external %string(255)   %fn    %spec	int2hex( %integer nn, places )
 %external %string(32)    %fn    %spec	int2bin( %integer nn )
 %external %string(16)    %fn    %spec	short2bin( %shortinteger nn )
+
+{ These next 5 functions only work on those %name parameters which reference }
+{ an array's (Dope Vector Pointer,Array Data Address)                        }
+%external %integer        %fn   %spec   array entry size( %name n )
+%external %integer        %fn   %spec   array entry type( %name n )
+%external %integer        %fn   %spec   array dimensions( %name n )
+%external %integer        %fn   %spec   array lower bound( %name n, %integer index )
+%external %integer        %fn   %spec   array upper bound( %name n, %integer index )
 
 { Experimental library routines in IMP (calling external C routines) }
 

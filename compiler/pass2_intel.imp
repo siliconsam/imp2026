@@ -5440,7 +5440,6 @@ roper(EXPx):
                     %finish %else %if (rhs_form = V in R) %start
                         ! now store the un-validated %short value
                         %if (EAX <= rhs_base <= EBX) %start
-!                            debugstring("RHS is V in R, with rhs_base=".itos(rhs_base,0)." (".reg as name(rhs_base).")");debugnewline
                             dumpmr16(MOV, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, AX + rhs_base - EAX )
                             dumpmi16(AND, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, 16_FFFF )
                         %finish %else %start
@@ -5453,8 +5452,6 @@ roper(EXPx):
                             { 2) MOV the rhs register into EAX }
                             { 3) Do the 16-bit transfer of AX register to memory }
                             { 4) restore the EAX from the stack using a pop instruction }
-                            debugstring("RHS is V in R, using EAX instead of rhs_base=".itos(rhs_base,0)." (".reg as name(rhs_base).")");debugnewline
-
                             { save EAX }
                             dumpur(PUSH,EAX)
                             { move rhs register into EAX }
@@ -8502,9 +8499,11 @@ c( * ):
     flush switch
 
     %if (diagnose&4 # 0) %start
-        debugnewline
-        debugstring(" Maximum depth of symbol stack = ".itos(get max tag,0))
-        debugnewline
+        select output( 0 )
+        newline
+        print string(" Maximum depth of symbol stack = ".itos(get max tag,0))
+        newline
+        select output( old output stream )
     %finish
 
 %end { of "pass2" }

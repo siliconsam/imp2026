@@ -105,36 +105,43 @@
 
     procname = getprocname( tp )
 
-    debugstring( " | ".itos(trapindex,4) )
-    debugstring( " | ".int2hex(addr(tp),8) )
-    debugstring( " | '".procname."'" );debugspaces(14-length(procname))
-    debugstring( " | ".int2hex(tp_start,8) )
-    debugstring( " | ".int2hex(tp_end,8) )
-    debugstring( " | ".eventlist )
-    debugstring( " | ".int2hex(tp_trapep,8) )
-    debugstring( " | ".int2hex(tp_from,8)." |" )
-    debugnewline
+    select output( 0 )
+    print string( " | ".itos(trapindex,4) )
+    print string( " | ".int2hex(addr(tp),8) )
+    print string( " | '".procname."'" );spaces(14-length(procname))
+    print string( " | ".int2hex(tp_start,8) )
+    print string( " | ".int2hex(tp_end,8) )
+    print string( " | ".eventlist )
+    print string( " | ".int2hex(tp_trapep,8) )
+    print string( " | ".int2hex(tp_from,8)." |" )
+    newline
+    select output( old output stream )
+
 %end { of "dumptrap" }
 
 {------------------------------------------------------------------------------}
 %routine dumpsignalhandled( %integer address, on event, %record(imptrap)%name tp )
 
-    debugstring("'handler found':")
-    debugstring(" valid event handler detected for address data")
-    debugnewline
-
-    debugstring( " |      " )
-    debugstring( " | ".int2hex(addr(tp),8) )
-    debugstring( " |                 " )
-    debugstring( " |  address = ".int2hex(address,8) )
-    debugstring( " | ".formeventpattern(on event) )
-    debugstring( " |         " )
-    debugstring( " |          |" )
-    debugnewline
+    select output( 0 )
+    print string("'handler found':")
+    print string(" valid event handler detected for address data")
+    newline
+    print string( " |      " )
+    print string( " | ".int2hex(addr(tp),8) )
+    print string( " |                 " )
+    print string( " |  address = ".int2hex(address,8) )
+    print string( " | ".formeventpattern(on event) )
+    print string( " |         " )
+    print string( " |          |" )
+    newline
+    select output( old output stream )
 
     dumptrap( 0, addr(tp) )
-    debugnewline
-    debugnewline
+    select output( 0 )
+    newline
+    newline
+    select output( old output stream )
+
 %end { of "dumpsignalhandled" }
 
 {------------------------------------------------------------------------------}
@@ -146,18 +153,20 @@
     ! and the address of the last trapentry BEFORE _imptraplimit
     %if (baseTrapAddress = 0) %or (limitTrapAddress = 0) %then findTrapAddressLimits
 
-    debugnewline
-    debugstring( "**** IMP TRAP DATA-STRUCTURE START ****" )
-    debugnewline
-    debugnewline
-    debugstring( "    _imptrapbase @(".int2hex(addr(trapbase),8).")" )
-    debugnewline
-    debugstring( "    _imptraplimit  @(".int2hex(addr(traplimit),8).")" )
-    debugnewline
-    debugnewline
-    debugstring(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");debugnewline
-    debugstring(" | Id    |  Trap    |    Routine       | Start    | End      |  Events          | EP       | From     |");debugnewline
-    debugstring(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");debugnewline
+    select output( 0 )
+    newline
+    print string( "**** IMP TRAP DATA-STRUCTURE START ****" )
+    newline
+    newline
+    print string( "    _imptrapbase @(".int2hex(addr(trapbase),8).")" )
+    newline
+    print string( "    _imptraplimit  @(".int2hex(addr(traplimit),8).")" )
+    newline
+    newline
+    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
+    print string(" | Id    |  Trap    |    Routine       | Start    | End      |  Events          | EP       | From     |");newline
+    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
+    select output( old output stream )
 
     ! We iterate over the table of trap blocks
     count = 0
@@ -169,11 +178,13 @@
         dumptrap( count, tpaddress )
     %repeat
 
-    debugstring(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");debugnewline
-    debugnewline
-    debugstring( "**** IMP TRAP DATA-STRUCTURE END ****" )
-    debugnewline
-    debugnewline
+    select output( 0 )
+    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
+    newline
+    print string( "**** IMP TRAP DATA-STRUCTURE END ****" )
+    newline
+    newline
+    select output( old output stream )
 
 %end { of "dumpalltrapinfo" }
 

@@ -120,11 +120,11 @@
         print string( "    Arg(1): IMP core routine definitions file" ); newline
         print string( "    Arg(2): IMP source file" );                   newline
                                                                          newline
-!        print string( "    Optional parameters" );                       newline
-!        print string( "    Arg(3): If present => %short == 2 bytes" );   newline
-!    
-         newline
-         exit(-1)
+        print string( "    Optional parameters" );                       newline
+        print string( "    Arg(3): <pass1>?<pass2>?" );                  newline
+
+        newline
+        exit(-1)
     %finish
 
 %end { of "impdriver" }

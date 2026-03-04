@@ -56,52 +56,51 @@
             line = event_line
             msg = event_message
 
-            debugnewline
-            debugstring( "**** Arrgh!" )
-            debugstring( " Last chance event handler triggered from line=" )
-            debugstring( itos(line,0) )
-            debugnewline
-            debugstring( "**** Triggered by error (event,sub,extra)=" )
-            debugstring( "(" )
-            debugstring( itos(eventno,0).",".itos(sub,0).",".itos(info,0) )
-            debugstring( ")" )
-            debugnewline
-            debugstring( "     Error message is '".msg."'" )
-            debugnewline
+            select output( 0 )
+            newline
+            print string( "**** Arrgh!" )
+            print string( " Last chance event handler triggered from line=" )
+            print string( itos(line,0) )
+            newline
+            print string( "**** Triggered by error (event,sub,extra)=" )
+            print string( "(" )
+            print string( itos(eventno,0).",".itos(sub,0).",".itos(info,0) )
+            print string( ")" )
+            newline
+            print string( "     Error message is '".msg."'" )
+            newline
 
             %if eventno=6 %and sub = 2 %and info = 1 %start
-                debugstring("**** Likely cause of error: ")
-                debugstring("Missing command line parameter(s) ")
-                debugstring("for input/output file(s)")
-                debug newline
+                print string("**** Likely cause of error: ")
+                print string("Missing command line parameter(s) ")
+                print string("for input/output file(s)")
+                newline
             %finish
 
             %if eventno = 9 %start
                 %if (sub = 4) %or (sub = 5) %start
-                    debugstring("**** Likely cause of error: ")
-                    debugstring("Missing/invalid command line parameter for ")
-                %finish
-                %if (sub = 4) %start
-                    debugstring("input ")
-                    debug newline
-                %finish
-                %if (sub = 5) %start
-                    debugstring("output ")
-                    debug newline
-                %finish
-                %if (sub = 4) %or (sub = 5) %start
-                    debugstring("file(s)")
-                %finish
+                    print string("**** Likely cause of error: ")
+                    print string("Missing/invalid command line parameter for ")
 
+                    %if (sub = 4) %start
+                        print string("input ")
+                    %finish
+                    %if (sub = 5) %start
+                        print string("output ")
+                    %finish
+                    print string("file(s)")
+                    newline
+                %finish
             %finish
 
             %if eventno = 10 %start
-                debugstring("**** Likely cause of error: ")
-                debugstring("Missing/invalid command line parameter(s)")
-                debug newline
+                print string("**** Likely cause of error: ")
+                print string("Missing/invalid command line parameter(s)")
+                newline
             %finish
 
-            debugnewline
+            newline
+            select output( old output stream )
 
             ! don't forget to close down the I/O system
             terminate io system
@@ -169,18 +168,8 @@
             %if length( inputs ) > 0 %then parse file list( inputs, INPUT )
             %if length( outputs ) > 0 %then parse file list( outputs, OUTPUT )
 
-            %if ((debug mode & DBGMAIN) # 0) %start
-                debug string( "IMPMAIN: About to enter the IMP program")
-                debug newline
-            %finish
-
             ! ok, let's go IMPing!!
             impmain
-
-            %if ((debug mode & DBGMAIN) # 0) %start
-                debug string( "IMPMAIN: Completed the IMP program")
-                debug newline
-            %finish
 
             ! don't forget to close down the I/O system
             terminate io system
@@ -214,18 +203,21 @@
     ! for a %begin ... %end IMP program, indicate the expected command line parameters
     %routine usage
         ! Errors detected so show usage of %begin ... %end IMP program
-        debugstring( "  Usage: <imp program> [in1[,in2[,in3]]]" )
-        debugstring( tostring(FILE SEP) )
-        debugstring( "[out1[,out2[,out3]]] [debug]" )
-        debug newline
-        debugstring( "   NB:" )
-        debug newline
-        debugstring( "   1) The '".tostring(FILE SEP)."' is mandatory" )
-        debug newline
-        debugstring( "      It seperates the input and output file lists" )
-        debug newline
-        debugstring( "   2) debug triggers run time debug messages)" )
-        debug newline
+        select output( 0 )
+
+        print string( "  Usage: <imp program> [in1[,in2[,in3]]]" )
+        print string( tostring(FILE SEP) )
+        print string( "[out1[,out2[,out3]]] [debug]" )
+        newline
+        print string( "   NB:" )
+        newline
+        print string( "   1) The '".tostring(FILE SEP)."' is mandatory" )
+        newline
+        print string( "      It seperates the input and output file lists" )
+        newline
+        print string( "   2) debug triggers run time debug messages)" )
+        newline
+        select output( old output stream )
     %end
 
     !--------------------------------------------------------------------------
@@ -256,12 +248,6 @@
                 file = x
                 length(x) = 0
             %finish
-
-!            %if file->file.(":b") %start
-!                data = BINARY
-!            %finish %else %start
-!                data = TEXT
-!            %finish
 
             %if (charno(file,length(file)) = 'b') %and (charno(file,length(file) - 1 ) = ':') %start
                 length(file) = length(file) - 2

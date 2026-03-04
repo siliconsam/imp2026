@@ -455,54 +455,6 @@
     %end { of "printstring" }
 
     {------------------------------------------------------------------------}
-    %external %routine debug space
-        debugsymbol( ' ' )
-    %end { of "debug space" }
-
-    {------------------------------------------------------------------------}
-    %external %routine debug spaces( %integer count )
-        %integer i
-
-        %if (count > 0) %start
-            %for i = 1,1,count %cycle
-                debugsymbol( ' ' )
-                %repeat
-            %finish
-    %end { of "debug spaces" }
-
-    {------------------------------------------------------------------------}
-    %external %routine debug string ( %string(255) s )
-        %integer i
-
-        %for i=1,1,length(s) %cycle
-            debug symbol( charno(s,i))
-                %repeat
-    %end { of "debug string" }
-
-    {------------------------------------------------------------------------}
-    %external %routine debug real( %long %real d, %integer sf )
-
-        debug string( F to S( d, sf ) )
-
-    %end { of "debug real" }
-
-    {------------------------------------------------------------------------}
-    %external %routine debug newline
-        debug symbol( nl )
-    %end { of "debug newline" }
-
-    {------------------------------------------------------------------------}
-    %external %routine debug newlines( %integer count )
-        %integer i
-
-        %if (count > 0) %start
-            %for i = 1,1,count %cycle
-                debug symbol( nl )
-                %repeat
-            %finish
-    %end { of "debug newlines" }
-
-    {------------------------------------------------------------------------}
     %external %string(255) %function reverse( %string(255) x )
         %string(255) human
         %integer i
