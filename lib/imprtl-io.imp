@@ -489,12 +489,11 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&1 # 0) %start
-select output( 0 )
-print string("OPENINPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
-newline
-select output( old output stream )
-%finish
+                select output( 0 )
+                print string("OPENINPUT: unable to open filename='".filename."' for stream(".itos(stream id,0).")")
+                newline
+                select output( old output stream )
+
                 %signal 9, 2, get error
             %else
                 streamX == in_streams( stream id )
@@ -536,12 +535,11 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&1 # 0) %start
-select output( 0 )
-print string("OPENBINARYINPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
-newline
-select output( old output stream )
-%finish
+                select output( 0 )
+                print string("OPENBINARYINPUT: unable to open filename='".filename."' for stream(".itos(stream id,0).")")
+                newline
+                select output( old output stream )
+
                 %signal 9, 2, get error
             %else
                 streamX == in_streams( stream id )
