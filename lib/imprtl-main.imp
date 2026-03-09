@@ -71,14 +71,14 @@
             print string( "     Error message is '".msg."'" )
             newline
 
-            %if eventno=6 %and sub = 2 %and info = 1 %start
+            %if (eventno=6) %and (sub = 2) %and (info = 1) %start
                 print string("**** Likely cause of error: ")
                 print string("Missing command line parameter(s) ")
                 print string("for input/output file(s)")
                 newline
             %finish
 
-            %if eventno = 9 %start
+            %if (eventno = 9) %start
                 %if (sub = 4) %or (sub = 5) %start
                     print string("**** Likely cause of error: ")
                     print string("Missing/invalid command line parameter for ")
@@ -94,7 +94,7 @@
                 %finish
             %finish
 
-            %if eventno = 10 %start
+            %if (eventno = 10) %start
                 print string("**** Likely cause of error: ")
                 print string("Missing/invalid command line parameter(s)")
                 newline
@@ -107,7 +107,7 @@
             terminate io system
 
             ! and good bye!!!!
-            exit(1)
+            exit(2)
 
         %finish
 
@@ -165,7 +165,7 @@
 
         %finish %else %start
             usage
-            exit(1)
+            exit(5)
         %finish
 
         ! Ah! %endofprog so report success to the shell
@@ -195,12 +195,9 @@
         print string( tostring(FILE SEP) )
         print string( "[out1[,out2[,out3]]]" )
         newline
-        print string( "   NB:" )
-        newline
-        print string( "   1) The '".tostring(FILE SEP)."' is mandatory" )
-        newline
-        print string( "      It seperates the input and output file lists" )
-        newline
+        print string( "   NB:" ); newline
+        print string( "   1) The '".tostring(FILE SEP)."' is mandatory" ); newline
+        print string( "      It seperates the input and output file lists" ); newline
         select output( old output stream )
     %end
 
@@ -216,7 +213,7 @@
 
         x = list
         streamid = 1
-        %while length(x) > 0 %cycle
+        %while (length(x) > 0) %cycle
 
             %exit %unless (1 <= streamid <= max stream)
 
@@ -240,7 +237,7 @@
                 data = TEXT
             %finish
 
-            %exit %unless length( file ) > 0
+            %exit %unless (length( file ) > 0)
 
             %if (data = TEXT) %start
                 %if (io = INPUT)  %then open input( streamid, file )

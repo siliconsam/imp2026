@@ -95,6 +95,8 @@
             close input
         %finish
 
+        exit(5) %if (no faults > 0)
+
         %if (No Faults = 0) %and run pass( imp mode, "pass2" ) %start
 
             open binary input( icode in2, icdfile )
