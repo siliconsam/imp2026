@@ -1318,8 +1318,9 @@ text:           ->chars %if (quote < 0)    { character consts }
                     cont = ' '
                     read sym
                     code atom(target)
-                    %return %unless (atom1 = 48) %and (sym = squote)    { fold "???"."+++" }
+                    %exit %unless (atom1 = 48) %and (sym = squote)    { fold "???"."+++" }
                 %repeat
+                %return
 
 number:         base = 10
 bxk:            atom1 = var

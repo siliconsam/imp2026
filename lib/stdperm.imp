@@ -102,17 +102,6 @@
 %external %string(255)   %fn    %spec   sub string( %string(255) s, %integer from, to )
 %external %string(255)   %fn    %spec   trim( %string(255) s, %integer max )
 
-! Debug definitions
-%external %routine              %spec   Set Debug
-%external %routine              %spec   Clear Debug
-%external %integer       %fn    %spec   Debug Mode
-%external %predicate            %spec   Show Debug
-
-%const    %integer                      DBGMAIN = 2
-%const    %integer                      DBGPROG = 4
-%const    %integer                      DBGCORE = 8
-%external %routine              %spec   Set Debug Level( %integer lvl )
-
 { multi-number base version of I to S (number base in range 2..36) }
 %external %string(255)   %fn    %spec	int2ascii( %integer nn, base, places )
 

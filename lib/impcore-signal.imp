@@ -5,16 +5,16 @@
                         %integer xret )
 
 %external %routine      %spec   exit( %integer status )
-%external %routine %spec terminate io system
+%external %routine      %spec terminate io system
 
-%external %routine %spec save event( %integer line, event, sub, extra )
-%external %routine %spec messageFormatA( %integer message id )
-%external %routine %spec messageFormatB( %integer address )
-%external %routine %spec dumpalltrapinfo
-%external %predicate %spec handler found ( %integer event, address )
-%external %predicate %spec initial entry found ( %integer address )
+%external %routine      %spec save event( %integer line, event, sub, extra )
+%external %routine      %spec messageFormatA( %integer message id )
+%external %routine      %spec messageFormatB( %integer address )
+%external %routine      %spec dumpalltrapinfo
+%external %predicate    %spec handler found ( %integer event, address )
+%external %predicate    %spec initial entry found ( %integer address )
 %external %integer  %fn %spec handler entry address( %integer address )
-
+%external %integer      %spec rtl diagnose
 {-----------------------------------------------------------------------------}
 %routine impexit( %integer status )
     terminate io system
@@ -31,12 +31,12 @@
     %integer status
     %record(impframe) %name mybp,chainbp
     %integer panic
+    %integer rtl diagnose = get env as integer( "IMP_RTL_DIAGNOSE" )
 
     ! JDM: This code will dump out the IMP trap tables
     ! Uncomment when debugging the run-time code
     ! Do NOT delete from this source code
-    dumpalltrapinfo %if show debug
-
+    dumpalltrapinfo %if (rtl diagnose&2 # 0)
     ! Remember the event data and form the event message
     save event( line, event, sub, info )
 
@@ -46,7 +46,7 @@
 
         %if (sub = 0) %start
             ! %signal 0,0,n  == %stop with exit status == n
-            messageFormatA( 6 ) %if show debug
+            messageFormatA( 6 ) %if (rtl diagnose&2 # 0)
         %finish %else %start
             messageFormatA( 7 )
         %finish

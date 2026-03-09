@@ -15,7 +15,6 @@ IMPCORE=impcore-arrayutils.o \
      impcore-signal.o
 
 IMPLIB=implib-arg.o \
-     implib-debug.o \
      implib-env.o \
      implib-read.o \
      implib-strings.o 
