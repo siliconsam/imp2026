@@ -6640,8 +6640,8 @@ done:
         %end { of "Compare Values" }
 
         %routine Compare Addresses
-            amap(top)
             amap(stack(stp-1));                  ! Now do same as compare values
+            %if (top_form # 0) %then amap(top)
             Compare Values
         %end { of "Compare Addresses" }
 
