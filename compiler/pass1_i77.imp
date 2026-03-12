@@ -401,7 +401,8 @@ more:       newline
         %repeat
 
         { %signal 14,15 %if (diag&4096 # 0) }
-        %stop
+        %signal 0,-1,n
+!        %stop
     %end { of "abandon" }
 
     %routine set const(%integer m)

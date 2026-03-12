@@ -156,6 +156,23 @@ ${P1_PROG} ${PERM_FILE} ${FILENAME}
 if [ $? -ne 0 ] ; then
     echo "imp77: Compilation failure in ${P1_PROG} for ${SRCNAME}${EXTENSION}"
 	exit 1
+else
+    ${P3_PROG} ${SRCNAME}.ibj ${SRCNAME}.o
+    if [ $? -ne 0 ] ; then
+        echo "imp77: Compilation failure in ${P3_PROG} for $1"
+        exit 1
+    else
+        if ${DO_LINK}; then
+            # Linker
+            ${CC} ${M32} -no-pie -o ${SRCNAME} ${SRCNAME}.o ${LINK_OPT}
+
+            if [ $? -ne 0 ] ; then
+                echo "imp77: Linking failure for program $1"
+                exit 1
+            fi
+        fi
+    fi
+
 fi
 
 #${P2_PROG} ${SRCNAME}.icd,${FILENAME}=${SRCNAME}.ibj,${CODEFILE}
@@ -165,29 +182,15 @@ fi
 #fi
 
 if ${TIDY_MODE}; then
-	rm ${SRCNAME}.icd
-fi
-
-${P3_PROG} ${SRCNAME}.ibj ${SRCNAME}.o
-if [ $? -ne 0 ] ; then
-    echo "imp77: Compilation failure in ${P3_PROG} for $1"
-	exit 1
-fi
-
-if ${TIDY_MODE}; then
-	rm ${SRCNAME}.ibj
-fi
-
-if ${DO_LINK}; then
-    # Linker
-    ${CC} ${M32} -no-pie -o ${SRCNAME} ${SRCNAME}.o ${LINK_OPT}
-
-    if [ $? -ne 0 ] ; then
-        echo "imp77: Linking failure for program $1"
-        exit 1
+    if [ -e ${SRCNAME}.icd ]; then
+        rm ${SRCNAME}.icd
     fi
 
-	if ${TIDY_MODE}; then
-		rm ${SRCNAME}.o
-	fi
+    if [ -e ${SRCNAME}.ibj ]; then
+        rm ${SRCNAME}.ibj
+    fi
+
+    if [ -e ${SRCNAME}.o ]; then
+        rm ${SRCNAME}.o
+    fi
 fi

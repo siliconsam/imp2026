@@ -9,7 +9,7 @@
     { Extend basechar to include the additional chars                        }
     { 2) update the validate base routine to extend
     {------------------------------------------------------------------------}
-    %constant %string(16) basechar = "0123456789ABCDEF"
+    %own %string(16) basechar = "0123456789ABCDEF"
 
     {------------------------------------------------------------------------}
     { Validate the number base                                               }

@@ -26,9 +26,9 @@
     esw(0):
         %begin
            ! sub value has full integer range
-           %if (sub < 0) %then msg = "Abandon program, sauve qui peut!"
+           %if (sub < 0) %then msg = "Abandon program" ;!, sauve qui peut!"
            %if (sub = 0) %then msg = "%stop"
-           %if (sub > 0) %then msg = "User generated error. ".x
+           %if (sub > 0) %then msg = "User generated error"
         %end
         -> esac
     esw(1):
@@ -174,15 +174,14 @@
 
         selectoutput(0)
         newline
-        printstring( "IMPRTL: " )
         -> mess(message id)
-    mess(1): printstring( "SHOWEVENT: " )
+    mess(1): printstring( "IMPRTL: SHOWEVENT: " )
              printstring( lastevent_message )
              -> esac
-    mess(2): printstring( "Start of Stack dump - triggered at line=" )
+    mess(2): printstring( "IMPRTL: Start of Stack dump - triggered at line=" )
              printstring( int2ascii( event_line,10,0 ) )
              -> esac
-    mess(3): printstring( "Signal No handler found for signalled event (" )
+    mess(3): printstring( "IMPRTL: Signal No handler found for signalled event (" )
              printstring( evt )
              printstring( ", " )
              printstring( sub )
@@ -190,18 +189,14 @@
              printstring( xtr )
              printstring( ")." )
              -> esac
-    mess(4): printstring( "Possible stack error?" )
+    mess(4): printstring( "IMPRTL: Possible stack error?" )
              -> esac
-    mess(5): printstring( "End of Stack dump" )
+    mess(5): printstring( "IMPRTL: End of Stack dump" )
              -> esac
-    mess(6): printstring( "Stopping program with exit status=" )
+    mess(6): printstring( lastevent_message." exit status=" )
              printstring( xtr )
              -> esac
-    mess(7): printstring( "Stopping program with exit status=" )
-             printstring( xtr )
-             printstring( " with message '".lastevent_message."'" )
-             -> esac
-    mess(*): printstring( "Unknown message# given." )
+    mess(*): printstring( "IMPRTL: Unknown message# given." )
              -> esac
     esac:
         newline

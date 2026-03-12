@@ -70,11 +70,13 @@
 
     %external %string (255) %fn  CLI PARAM %alias "_imp_cliparam"
         %string (255) result = ""
+        %string(255) temp
         %integer p
 
         %for p = 1, 1, getargcount-1 %cycle
-            %if length(result)+length(getarg(p)) > 255 %start
-                %result = result.substring(getarg(p),1,255-length(result))
+            temp = getarg(p)
+            %if length(result)+length(temp) > 255 %start
+                %result = result.substring(temp,1,255-length(result))
                 ! Silently truncate, or %signal an overflow event?
             %finish
             result <- result.getarg(p)
