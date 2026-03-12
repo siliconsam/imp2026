@@ -43,6 +43,7 @@
 
         %string(255) s, b, inputs, outputs
         %integer errcount = 0
+        %integer status = 0
 
 !JDM restricted last chance handler so that
 !JDM other signals will generate a stack dump
@@ -160,16 +161,20 @@
             ! ok, let's go IMPing!!
             impmain
 
-            ! don't forget to close down the I/O system
-            terminate io system
+            status = 0
 
         %finish %else %start
             usage
-            exit(5)
+
+            status = -1
         %finish
 
+        ! don't forget to close down the I/O system
+        terminate io system
+
         ! Ah! %endofprog so report success to the shell
-        exit(0)
+        exit(status)
+
     %end
 
     !--------------------------------------------------------------------------
