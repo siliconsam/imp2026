@@ -14,7 +14,7 @@
 @set dolink=yes
 @set docode=no
 @set dolist=no
-@set doicd=no
+@set keeptemp=no
 @set doheap=no
 @set doshort=
 @set dopass3=yes
@@ -38,10 +38,10 @@
 @if "%1"=="-Fs" @goto :setlist
 @if "%1"=="/FS" @goto :setlist
 @if "%1"=="-FS" @goto :setlist
-@if "%1"=="/Fi" @goto :seticd
-@if "%1"=="-Fi" @goto :seticd
-@if "%1"=="/FI" @goto :seticd
-@if "%1"=="-FI" @goto :seticd
+@if "%1"=="/Fi" @goto :settemp
+@if "%1"=="-Fi" @goto :settemp
+@if "%1"=="/FI" @goto :settemp
+@if "%1"=="-FI" @goto :settemp
 @if "%1"=="/Fh" @goto :setheap
 @if "%1"=="-Fh" @goto :setheap
 @if "%1"=="/FH" @goto :setheap
@@ -68,8 +68,8 @@
 @shift
 @goto parseargs
 
-:seticd
-@set doicd=yes
+:settemp
+@set keeptemp=yes
 @shift
 @goto parseargs
 
@@ -105,16 +105,22 @@
 @set listfile=NUL
 @if "%dolist%"=="yes" @set listfile=%module%.lst
 
-@%DRIVER_HOME%\impdriver %PERM_HOME%\stdperm.imp %module%.imp
-@if not errorlevel 0 @goto :bad_codegen_end
+@%DRIVER_HOME%\impdriver %PERM_HOME%\stdperm.imp %module%.imp pass1
+@if not %errorlevel%==0 @goto :bad_parse_end
+@for /F "usebackq" %%A IN ('%module%.icd') DO set icd_size=%%~zA
+@if %icd_size%==0 @goto no_icd_file 
+
+@%DRIVER_HOME%\impdriver %PERM_HOME%\stdperm.imp %module%.imp pass2
+@if not %errorlevel%==0 @goto :bad_codegen_end
 @for /F "usebackq" %%A IN ('%module%.ibj') DO set ibj_size=%%~zA
 @if %ibj_size%==0 @goto no_ibj_file 
-@if "%doicd%"=="no" @del %1.icd
+@if "%keeptemp%"=="no" @del %module%.icd
 
 @if "%dopass3%"=="no" @goto end
 @%P3_HOME%\pass3coff %module%.ibj %module%.obj
-@if not errorlevel 0 @goto bad_objgen_end
-@if "%doicd%"=="no" @del %module%.ibj
+@if not %errorlevel%==0 @goto bad_objgen_end
+@rem if not errorlevel 0 @goto bad_objgen_end
+@if "%keeptemp%"=="no" @del %module%.ibj
 
 @if "%dolink%"=="no" @goto the_end
 @set option=
