@@ -1,8 +1,9 @@
 
 @set COM_HOME=%~dp0
 @set IMP_SOURCE_HOME=%COM_HOME:~0,-1%
-@set IMP_INCLUDE_HOME=%IMP_SOURCE_HOME%\include\
-@set IMP_INSTALL_HOME=%IMP_SOURCE_HOME%\release\
+@set IMP_INCLUDE_HOME=%IMP_SOURCE_HOME%\include
+@set IMP_INSTALL_HOME=%IMP_SOURCE_HOME%\release
+@set IMP_FILESEP=\
 @set dircmd=/ognes
 
 @rem First add in the Pascal compiler (Free Pascal for preference)

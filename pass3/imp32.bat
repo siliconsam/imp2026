@@ -91,6 +91,7 @@
 :compile
 @set module=%1
 @set source=%module%
+@if exist %module% @set module=%module:~0,-4%
 @if exist %module%.imp @set source=%module%.imp
 @if exist %module%.i   @set source=%module%.i
 @if exist %source% @goto start
@@ -104,7 +105,7 @@
 @set listfile=NUL
 @if "%dolist%"=="yes" @set listfile=%module%.lst
 
-@%DRIVER_HOME%\impdriver %PERM_HOME%\stdperm %module% %doshort%
+@%DRIVER_HOME%\impdriver %PERM_HOME%\stdperm.imp %module%.imp
 @if not errorlevel 0 @goto :bad_codegen_end
 @for /F "usebackq" %%A IN ('%module%.ibj') DO set ibj_size=%%~zA
 @if %ibj_size%==0 @goto no_ibj_file 

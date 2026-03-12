@@ -118,15 +118,12 @@
 :do_copyfiles
 @set from_dir=%1
 @set to_dir=%2
-@rem copy/y %FROM_DIR%\prim.clib.inc    %TO_DIR%\*
-@rem copy/y %FROM_DIR%\prim-library.ibj %TO_DIR%\*
-@copy/y %FROM_DIR%\implib-heap.ibj    %TO_DIR%\*
-@copy/y %FROM_DIR%\implib-heap.inc    %TO_DIR%\*
-@copy/y %FROM_DIR%\implib-trig.ibj    %TO_DIR%\*
-@copy/y %FROM_DIR%\implib-trig.inc    %TO_DIR%\*
-@copy/y %FROM_DIR%\imprtl-file.ibj    %TO_DIR%\*
-@copy/y %FROM_DIR%\imprtl-main.ibj  %TO_DIR%\*
-@copy/y %FROM_DIR%\imprtl-main.imp  %TO_DIR%\*
+@copy/y %FROM_DIR%\impcore.types.inc  %TO_DIR%\*
+@copy/y %FROM_DIR%\imprtl-main.ibj    %TO_DIR%\*
+@copy/y %FROM_DIR%\imprtl-main.imp    %TO_DIR%\*
+@copy/y %FROM_DIR%\prim.clib.inc      %TO_DIR%\*
+@copy/y %FROM_DIR%\prim-library.ibj   %TO_DIR%\*
+@copy/y %FROM_DIR%\prim-library.imp   %TO_DIR%\*
 @exit/b
 
 :do_loadlib
@@ -135,7 +132,7 @@
 @set start=%1
 
 @rem compile the implib-XXX modules
-@for %%a in (arg,debug,env,read,strings) do (
+@for %%a in (arg,env,read,strings) do (
     @call :do_compile "implib-%%a" %start%  lib
 )
 
@@ -183,7 +180,7 @@
     @rem Create the .ibj file from the .imp source file
     @rem %BIN_DIR%\pass1.exe %module%.imp,%PERM_HOME%\stdperm.imp=%module%.icd:b,%module%.lst
     @rem %BIN_DIR%\pass2.exe %module%.icd:b,%module%.imp=%module%.ibj,%module%.cod
-    @%BIN_DIR%\impdriver.exe %PERM_HOME%\stdperm %module%
+    @%BIN_DIR%\impdriver.exe %PERM_HOME%\stdperm.imp %module%.imp
 )
 @rem we assume that the appropriate pass3XXX.exe is always in the "release" folder
 @rem Create the .obj file from the .ibj file

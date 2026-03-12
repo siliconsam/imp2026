@@ -6,7 +6,7 @@
 
     %integer No stats, No Faults, No Warnings
     %integer Options
-    %string(255) imp param, imp defs, imp mode
+    %string(255) imp defs, imp mode
     %string(255) imp source, imp prefix, imp extension
     %string(255) def file, imp file, icd file, ibj file, list file, code file
 

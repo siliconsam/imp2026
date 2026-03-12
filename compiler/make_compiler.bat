@@ -158,7 +158,7 @@
 @set source=%2
 @rem Create the .obj file from the .ibj/.imp file
 @if "%source%"=="imp" (
-    @%BIN_DIR%\impdriver.exe %PERM_HOME%\stdperm %module%
+    @%BIN_DIR%\impdriver.exe %PERM_HOME%\stdperm.imp %module%.imp
 )
 @%BIN_DIR%\pass3coff.exe %module%.ibj %module%.obj
 @exit/b

@@ -6,6 +6,7 @@ echo "${PWD}"
 
 if [ -z ${IMP_SOURCE_HOME} ]; then
     export IMP_SOURCE_HOME="${PWD}"
+    export IMP_INCLUDE_HOME="${PWD}/include"
 fi
 
 if [ -z ${IMP_INSTALL_HOME} ]; then
@@ -32,5 +33,7 @@ fi
 if [ -z ${IMP_TOOLS_HOME} ]; then
     export IMP_TOOLS_HOME="${IMP_INSTALL_HOME}"
 fi
+
+export IMP_FILESEP=/
 
 bash

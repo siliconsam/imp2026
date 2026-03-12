@@ -1,5 +1,5 @@
 %externalstring(255)%fn Actual Include %alias "ACTINC"(%string(255) F, I)
-    %string(255) X,J,K,L
+    %string(255) X,J,K,L,File Sep
 
     { N.B. Windows and Linux both accept / as a directory seperator        }
     { You need to alter this routine for other operating systems           }
@@ -43,23 +43,25 @@
 !!   Length(I) = 9 %if Length(I) > 9
 !!   Length(F) = 9 %if Length(F) > 9
 
+    File Sep = get env as string("IMP_FILESEP")
+
     { Check to see if F is not empty }
     %if (F = "IMP") %start
         { We have detected a reference to IMP }
-        X = get env as string( "IMP_INCLUDE_HOME" ).I
+        X = get env as string( "IMP_INCLUDE_HOME" ).File Sep.I
     %finish %else %if (F <> "") %start
         { We have detected a reference to some environment variable }
-        X = get env as string( F )."/".I
+        X = get env as string( F ).File Sep.I
     %finish %else %if I -> ("IMP:").J %start
         { We have detected a reference to IMP: }
-        X = get env as string( "IMP_INCLUDE_HOME" ).J
+        X = get env as string( "IMP_INCLUDE_HOME" ).File Sep.J
     %finish %else %if I -> ("$IMP:").J %start
         { We have detected a reference to $IMP: }
-        X = get env as string( "IMP_SOURCE_HOME" )."/include/".J
+        X = get env as string( "IMP_SOURCE_HOME" ).File Sep."include".File Sep.J
     %finish %else %if I -> ("$").J %start
         { We have detected a reference to $XXX: }
         %if J -> K.(":").L %start
-            X = get env as string( K ).L
+            X = get env as string( K ).File Sep.L
         %finish %else %start
             ! Oops, the format of the include string is in error
             ! We should indicate an error
