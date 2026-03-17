@@ -17,6 +17,7 @@
         e = itos(event,0)
         s = itos(sub,0)
         x = itos(info,0)
+        %if (info < 0) %then x = "-".x
 
         eventmsg = "(".e.",".s.",".x.")"
 
