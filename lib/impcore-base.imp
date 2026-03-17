@@ -212,7 +212,7 @@
     ! Returns floating point x ^ p
     !--------------------------------------------------------------------------
     %external %long %real %function impfexp ( %integer p, %long %real x)
-        %long %real r;
+        %long %real r
 
         %if (p = 0) %then %result = 1.0
         %if (x = 0.0) %then %result = 0.0
@@ -225,10 +225,10 @@
 
         r = 1.0
         %cycle
-            %if ((p & 1) # 0) %then r = r * x;
+            %if ((p & 1) # 0) %then r = r * x
             p = p >> 1;
-            %if (p = 0) %then %result = r;
-            x = x * x;
+            %if (p = 0) %then %result = r
+            x = x * x
         %repeat
     %end { of "impfexp" }
 
@@ -236,18 +236,25 @@
     ! returns x ^ y
     !--------------------------------------------------------------------------
     %external %integer %function impiexp ( %integer y, x)
-        %integer value;
+        %integer value
 
-        %signal 5, 2, y %unless (y >=0);
+        %signal 5, 2, y %unless (y >=0)
 
-        value = 1;
+        %if (y # 0) %start
+            %if (x # 1) %start
+                value = 1
+                %while (y > 0) %cycle
+                    value = value * x
+                    y = y - 1
+                %repeat
+                %result = value
+            %finish %else %start
+                %result = 1
+            %finish
+        %finish %else %start
+            %result = 1
+        %finish
 
-        %while (y > 0) %cycle
-            value = value * x
-            y = y - 1
-        %repeat
-
-        %result = value
     %end { of "impiexp" }
 
     {--------------------------------------------------------------------------}
