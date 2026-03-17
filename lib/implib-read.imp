@@ -21,6 +21,7 @@
     %predicate whitespace( %integer ch )
         %true %if (ch = ' ')
         %true %if (ch = 8)
+        %true %if (ch = 9)
         %true %if (ch = NL)
         %true %if (ch = 13)
         %false
