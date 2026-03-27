@@ -5,11 +5,18 @@ echo "$0"
 echo "${PWD}"
 
 if [ -z ${IMP_SOURCE_HOME} ]; then
-    export IMP_SOURCE_HOME="${PWD}"
+    export IMP_SOURCE_HOME=${PWD}
+    
     export IMP_INCLUDE_HOME="${PWD}/include"
+    export IMP_FILESEP="/"
+    
 fi
 
+
 if [ -z ${IMP_INSTALL_HOME} ]; then
+    export IMP_INSTALL_HOME="${PWD}/release"
+    export PATH="${IMP_INSTALL_HOME}/bin:${PATH}"
+
     if [ ! -e ${PWD}/release ]; then
         mkdir ${PWD}/release
     fi
@@ -22,8 +29,6 @@ if [ -z ${IMP_INSTALL_HOME} ]; then
     if [ ! -e ${PWD}/release/lib ]; then
         mkdir ${PWD}/release/lib
     fi
-    export IMP_INSTALL_HOME=${PWD}/release
-    export PATH=${IMP_INSTALL_HOME}/bin:${PATH}
 fi
 
 #if [ -z ${IMP_EXPORT_HOME} ]; then
@@ -33,7 +38,5 @@ fi
 if [ -z ${IMP_TOOLS_HOME} ]; then
     export IMP_TOOLS_HOME="${IMP_INSTALL_HOME}"
 fi
-
-export IMP_FILESEP=/
 
 bash

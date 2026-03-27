@@ -924,9 +924,8 @@ s4:             symtype = quote
                 %integer dbase, da
                 %integer base, n, mul, pend quote
                 %integer j,k,l, pt
-
-                { ABD - temp variable to help pack bytes into words }
-                %integer flipflop
+                %owninteger lx = 0
+                %integer lxp
 
                 %routine lookup(%integer d)
                     %integer new name, vid, k1, form
@@ -1285,10 +1284,17 @@ strings:        atom1 = var
                 { a string constant is ok here, so pull it in and get }
                 { the next atom }
 
-text:           ->chars %if (quote < 0)    { character consts }
-                l = strp                   { point to beginning }
-                k = 0                      { length so far }
-                flipflop = 0               { space for the length is up the spout }
+text:           ->chars %if (quote < 0)      { character consts }
+
+                { store a string constant }
+                %if (lx = 0) %start
+                    lx = strp                { point to beginning index }
+                    glink(lx) =  0           { initialise empty string  }
+                %finish
+                lxp = addr(glink(lx))        { point to string start }
+                k = byteinteger(lxp)         { length so far }
+
+                lxp = lxp + k           { point to last byte stored }
 
                 %cycle
                     cont = squote
@@ -1299,21 +1305,16 @@ text:           ->chars %if (quote < 0)    { character consts }
                             %exit %if (nextsymbol # squote) { yes -> }
                             read sym                        { skip quote }
                         %finish
-                        %if (flipflop >= 0) %start
-                            glink(strp) = sym<<8 + flipflop
-                            strp = strp+1
-                            flipflop = -1
-                        %else
-                            flipflop = sym
-                        %finish
-                        k = k+1
+
+                        { store the byte and increment string size }
+                        lxp = lxp + 1
+                        byteinteger(lxp) = sym
+                        k = k + 1
                         lines = text line %and abandon(7) %if (k > 255)   { too many chars }
                     %repeat
-                    %if (flipflop >=0) %start                 { tail-end charlie }
-                        glink(strp) = flipflop
-                        strp = strp+1
-                    %finish
-                    glink(l) = glink(l)!k                   { plug in length }
+                    { end of constant string }
+                    glink(lx) = glink(lx)&x'ff00' + k     { plug in length }
+                    strp = lx + 256>>1 + 1                { ready for more strings }
 
                     quote = 0
                     cont = ' '
@@ -1321,6 +1322,10 @@ text:           ->chars %if (quote < 0)    { character consts }
                     code atom(target)
                     %exit %unless (atom1 = 48) %and (sym = squote)    { fold "???"."+++" }
                 %repeat
+                { no more constant strings to concatenate }
+                strp = lx + k>>1 + 1                  { ready for more strings }
+
+                lx = 0
                 %return
 
 number:         base = 10
@@ -1691,7 +1696,6 @@ act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
                 ->more
 
             %finish
-
             for warn = pos1 %if (x <= local)    { %for TEST }
             ->more
 

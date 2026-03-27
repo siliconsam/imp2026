@@ -79,7 +79,7 @@
             i = i+1
             char(i) = sym
             read symbol(sym)
-            %exit %unless ('A'<=sym<='Z') %or ('0'<=sym<='9')
+            %exit %unless (('A'<=sym) %and (sym<='Z') )%or (('0'<=sym) %and (sym<='9'))
         %repeat
         i = i+1
         char(i) = 0
@@ -180,7 +180,7 @@ u:          %if sym = '(' %start
                 ->err %if (unit = 0) %or (sym # ')')
                 read sym
             %else
-                %if ('A' <= sym <= 'Z') %or (sym = '%') %start
+                %if (('A' <= sym) %and (sym <= 'Z')) %or (sym = '%') %start
                     read name(i)
                     char(index(i)) = char(index(i))!128 %if (i # 0)
                     i = i!tran(i)<<11
@@ -460,7 +460,7 @@ l1:     read sym %until (sym # nl)
             %cycle i = 1, 1, inits
                 l = item(i)&255
                 %continue %if (l >= 200)
-                l = atomic(l) %if (min atomic <= l <= max atomic)
+                l = atomic(l) %if (min atomic <= l) %and (l <= max atomic)
                 %signal 0,25 %if (initial(l) # 0)
                 initial(l) = i
                 initnext(l) = item(i)
@@ -721,8 +721,8 @@ l10:    select output(dlist)
                 j = 32<<2
             %finish
             { let:0  dig:1  term:2  other:3 }
-            j = j+3 %unless ('A'<=i<='Z')
-            j = j-2 %if ('0'<=i<='9')
+            j = j+3 %unless ('A' <= i) %and (i <= 'Z')
+            j = j-2 %if ('0' <= i) %and (i <= '9')
             j = j-1 %if (i = ';')
             keydict(i) = j
         %repeat
