@@ -861,7 +861,7 @@
 
         t = ""
         ! For a i386 is this a 32-bit register
-        %if (length(t) = 0) %and (EAX <= n) %and (n <= DI) %start
+        %if (length(t) = 0) %and (EAX <= n <= DI) %start
             t = regname(n)
         %finish
 
@@ -1162,7 +1162,7 @@ at:
     { A very handy little boolean function,                       }
     { used for instructions with variable size immediate operands }
     %predicate issmall(%integer i)
-        %true %if (-128 < i) %and (i < 128)
+        %true %if (-128 < i < 128)
         %false
     %end { of "is small" }
 
@@ -2601,8 +2601,8 @@ esac:
         printsymbol(',')
         writehex(hi, 2)
         printstring(" ; ")
-        %if (32 < lo) %and (lo < 127) %then printsymbol(lo) %else printsymbol('.')
-        %if (32 < hi) %and (hi < 127) %then printsymbol(hi) %else printsymbol('.')
+        %if (32 < lo < 127) %then printsymbol(lo) %else printsymbol('.')
+        %if (32 < hi < 127) %then printsymbol(hi) %else printsymbol('.')
         newline
 
         writeifrecord(tag)
@@ -2640,8 +2640,8 @@ esac:
         printsymbol(',')
         writehex(hi, 2)
         printstring(" ; ")
-        %if (32 < lo) %and (lo < 127) %then printsymbol(lo) %else printsymbol('.')
-        %if (32 < hi) %and (hi < 127) %then printsymbol(hi) %else printsymbol('.')
+        %if (32 < lo < 127) %then printsymbol(lo) %else printsymbol('.')
+        %if (32 < hi < 127) %then printsymbol(hi) %else printsymbol('.')
         newline
 
         ! restore the real CAD
@@ -3730,7 +3730,7 @@ out1:
             ! JDM JDM: Ensure the external displacement is zero
             decvar_extdisp = 0
 
-            %if (switchform < form) %and (form < arrayform) %start
+            %if (switchform < form < arrayform) %start
                 ! PROCEDURE
                 ! 1 for normal proc, 2 for spec
                 block type = 1 + spec
@@ -4431,7 +4431,7 @@ out1:
                     r = gp reg
                 %finish
             %finish %else %if (r = anyg) %then %start
-                %if (0 < v_base) %and (v_base <= EBX) %and (activity(v_base) = 1) %start
+                %if (0 < v_base <= EBX) %and (activity(v_base) = 1) %start
                     r = v_base
                 %finish %else %start
                     r = gp reg
@@ -4692,7 +4692,7 @@ oper(SUBx):
                     %if (value # 0) %start
                         %if (op = SUBx) %then value = -value
                         ! look for increment or decrement instructions
-                        %if (-2 < value) %and (value < 2) %then %start
+                        %if (-2 < value < 2) %then %start
                             %if (lhs_type = bytetype) %start
                                 dumpum8(indec(value), lhs_base!lhs_scope, lhs_disp, lhs_extdisp )
                             %finish %else %if (lhs_type = shorttype) %start
@@ -4760,7 +4760,7 @@ oper(SUBx):
                     %finish %else %start
                         ! otherwise, don't bother deferring the operation
                         ! look for increment or decrement instructions
-                        %if (-2 < value) %and (value < 2) %then %start
+                        %if (-2 < value < 2) %then %start
                             %if (value # 0) %then dumpur(indec(value), lhs_base)
                         %finish %else %start
                             dumpri(opmap(op), lhs_base, rhs_disp)
@@ -4825,7 +4825,7 @@ oper(XORx):
 
 !                        warn(8) %if (rhs_disp&(\255) # 0)
 !                        warn(8) %unless (0 <= rhs_disp <= 255)
-                        warn(8) %unless (-256 <= rhs_disp) %and (rhs_disp <= 255)
+                        warn(8) %unless (-256 <= rhs_disp <= 255)
 
                         ! Do an immediate to memory store on the byte value in rhs_disp
                         dumpmi8(opmap(op), lhs_base!lhs_scope, lhs_disp, lhs_extdisp, rhs_disp&255)
@@ -4839,7 +4839,7 @@ oper(XORx):
                         ! Thus check for values in the 32-bit integer range -32768:32768
 
 !                        warn(9) %if (rhs_disp&(\16_ffff) # 0)
-                        warn(9) %unless (-32768 <= rhs_disp) %and (rhs_disp <= 32768)
+                        warn(9) %unless (-32768 <= rhs_disp <= 32768)
 
                         ! JDM JDM We are doing an immediate value to memory
                         ! This allows 8-bit byte or 32-bit integer operation
@@ -5035,7 +5035,7 @@ shift it:
                 ! make LHS accessible
                 address(lhs)
                 %if (rhs_form = constant) %start
-                    warn(6) %unless (0 <= rhs_disp) %and (rhs_disp <= 31)
+                    warn(6) %unless (0 <= rhs_disp <= 31)
                     %if (rhs_disp # 0) %start
                         ! shift by zero is a no-op
                         %if (lhs_type = bytetype) %start
@@ -5079,7 +5079,7 @@ shift it:
             ! deal with constant shifts first...
             %if (rhs_form = constant) %then %start
                 value = rhs_disp
-                warn(6) %unless (0 <= value) %and (value <= 31)
+                warn(6) %unless (0 <= value <= 31)
                 %if (value # 0) %start
                     loadreg(lhs, any)
                     dumpri(opmap(op), lhs_base, value)
@@ -5368,7 +5368,7 @@ roper(EXPx):
                 monitor(rhs, "STORE RHS")
             %finish
 
-            -> target(lhs_type) %if (integertype <= lhs_type) %and (lhs_type <= longrealtype)
+            -> target(lhs_type) %if (integertype <= lhs_type <= longrealtype)
             abort("Illegal function type (".itos(lhs_type,0).") for Store")
 
             target(integertype):
@@ -5428,7 +5428,7 @@ roper(EXPx):
                     ! So a 16-bit integer must be in the 32-bit integer range -32768:-1 or 0:32768
                     ! Thus check for values in the 32-bit integer range -32768:32768
 
-                    warn(9) %unless (-32768 <= rhs_disp) %and (rhs_disp <= 32768)
+                    warn(9) %unless (-32768 <= rhs_disp <= 32768)
 
                     ! JDM JDM We should add code to MOV a truncated %short constant to the LHS
                     ! but for Intel x86 we can only MOV a 32-bit integer or an 8-bit byte
@@ -5442,7 +5442,7 @@ roper(EXPx):
                         dumpmr16(MOV, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, AX )
                     %finish %else %if (rhs_form = V in R) %start
                         ! now store the un-validated %short value
-                        %if (EAX <= rhs_base) %and (rhs_base <= EBX) %start
+                        %if (EAX <= rhs_base <= EBX) %start
                             dumpmr16(MOV, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, AX + rhs_base - EAX )
                             dumpmi16(AND, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, 16_FFFF )
                         %finish %else %start
@@ -5529,7 +5529,7 @@ roper(EXPx):
                     ! Thus check for values in the 32-bit integer range 0:255
 
 !                    warn(8) %unless (0 <= rhs_disp <= 255)
-                    warn(8) %unless (-256 <= rhs_disp) %and (rhs_disp <= 255)
+                    warn(8) %unless (-256 <= rhs_disp <= 255)
 
                     ! Do an immediate to memory MOV on the byte value in rhs_disp
                     dumpmi8(MOV, lhs_base!lhs_scope, lhs_disp, lhs_extdisp, rhs_disp&255)
@@ -5650,7 +5650,7 @@ roper(EXPx):
                 assop = 0 %if (lh_form # V in S)
 
                 ! We need special treatment for procedure parameters
-                %if (switch form < lh_aform) %and (lh_aform < array form) %start
+                %if (switch form < lh_aform < array form) %start
                     ! this is a procedure
 
                     ! we will treat it as a value assignment
@@ -5683,7 +5683,7 @@ roper(EXPx):
                 %finish
             %finish
 
-            %if (array form <= rh_aform) %and (rh_aform <= name array name form) %start
+            %if (array form <= rh_aform <= name array name form) %start
                 ! Arrayname
                 ! An array name is two words - a pointer to the data and a
                 ! pointer to the dope vector.  If the RHS is already one of these
@@ -6247,8 +6247,8 @@ roper(EXPx):
                 pop rel
 
                 ! JDM JDM defend against out-of-range value for t
-                t = 0 %unless (0 < t) %and (t < 16)
-                abort("Illegal %prim macro") %unless (0 < t) %and (t < 15)
+                t = 0 %unless (0 < t < 16)
+                abort("Illegal %prim macro") %unless (0 < t < 15)
 
                 ! JDM JDM show start of macro "call" in listing
                 ! Now to say which macro was requested 
@@ -6473,7 +6473,7 @@ esac:
 
             ! Check control variable is a plain value - otherwise save a pointer to it
             ! in case it changes
-            %if (cv_form # v in s) %or ((0 < cv_base) %and (cv_base <= EDI) %and (cv_base # EBP)) %start
+            %if (cv_form # v in s) %or ((0 < cv_base <= EDI) %and (cv_base # EBP)) %start
                 n = cv_type
                 amap(cv)
                 stab(cv, n)
@@ -6717,7 +6717,7 @@ done:
             %switch sw(map:false)
             %label esac
 
-            -> sw( mode) %if (map <= mode) %and (mode <= false)
+            -> sw( mode) %if (map <= mode <= false)
             abort("Illegal mode for RETURN")
 
             sw(map):
@@ -6742,7 +6742,7 @@ done:
                     %finish
 
                     ! Take action depending on the function returned type
-                    -> st(procvar_type) %if (integertype <= procvar_type) %and (procvar_type <= longrealtype)
+                    -> st(procvar_type) %if (integertype <= procvar_type <= longrealtype)
                     abort("Illegal function type (".itos(procvar_type,0).") for RETURN")
 
                     ! Functions returning one of %byte,%short,%integer,%long
@@ -6825,7 +6825,7 @@ done:
             %integer i,j, useCOT, descriptor
 
             ! Validate the ICODE Parameters
-            abort("Array Dim") %unless (0 < dim) %and (dim < 6)
+            abort("Array Dim") %unless (0 < dim < 6)
 
             %if (in params # 0) %start
                 ! This is an Array inside a Record
