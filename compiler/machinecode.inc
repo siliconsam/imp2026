@@ -97,6 +97,29 @@
     params( index )_offset = 0
 %end
 
+    %routine dump tag var( %integer tag, %string(7) prefix )
+        %record(varfm)%name v
+
+        v == var(tag)
+
+        spaces(1); print string("VAR entry ".prefix); newline
+        spaces(5); print string("tag="); write(tag,0); newline
+        spaces(5); print string("name=".get symbol name(tag)); newline
+        spaces(5); print string("type=".get type name(v_type)); newline
+        spaces(5); print string("form=".get internal form name(v_form)); newline
+        spaces(5); print string("level="); write(v_level,0); newline
+        spaces(5); print string("scope="); write(v_scope,0); newline
+        spaces(5); print string("reloc=".relocname(v_scope>>4) ); newline
+        spaces(5); print string("dim="); write(v_dim,0); newline
+        spaces(5); print string("disp=".hexint(v_disp,8)." "); write(v_disp,0); newline
+        spaces(5); print string("extdisp="); write(v_extdisp,0); newline
+        spaces(5); print string("format="); write(v_format,0); newline
+        spaces(5); print string("size="); write(v_size,0); newline
+        spaces(5); print string("pbase="); write(v_pbase,0); newline
+        spaces(5); print string("extra="); write(v_extra,0); newline
+
+    %end { of "dump tag var" }
+
 %routine dump parameter( %integer index )
     %string(255) t
     %integer tag,n
@@ -212,7 +235,7 @@
                 ! tweak appended "char" to be a legal 7-bit ASCII char
                 ch = charno(parameters, i) - 128
                 ! convert char to uppercase
-                %if ('a' <= ch) %and (ch <= 'z') %then ch = ch - 'a' + 'A'
+                %if ('a' <= ch <= 'z') %then ch = ch - 'a' + 'A'
 
                 ! remember the char
                 charno( t, length(t)) = ch
@@ -515,7 +538,7 @@
     opIdx = opGenericId(opId)
 
     %if (params count = 0) %start
-        %if (NOP <= opId) %and (opId <= LEAVE) %start
+        %if (NOP <= opId <= LEAVE) %start
             dumpsimple(opId)
         %finish %else %start
             select output(Listing)
@@ -605,7 +628,7 @@
         %finish
 
         ! SOURCE errors
-        %if (source_type = pointer) %and (AL <= source_value) %and (source_value <= BH) %start
+        %if (source_type = pointer) %and (AL <= source_value <= BH) %start
             abortmcode( instruction, "Source POINTER must use a 32-bit register" )
         %finish
 
@@ -614,7 +637,7 @@
         %finish
 
         ! TARGET errors
-        %if (target_type = pointer) %and (AL <= target_value) %and (target_value <= BH) %start
+        %if (target_type = pointer) %and (AL <= target_value <= BH) %start
             abortmcode( instruction, "Target POINTER must use a 32-bit register" )
         %finish
 
@@ -663,9 +686,9 @@
             %finish %else %if (top_type = recordtype) %start
                 dumpmr32(OpId, top_base!top_scope, top_disp, top_extdisp, source_value)
             %finish %else %if (top_type = bytetype) %start
-                %if (EAX <= source_value) %and (source_value<= EDI) %start
+                %if (EAX <= source_value <= EDI) %start
                     dumpmr8(opId, top_base!top_scope, top_disp, top_extdisp, source_value )
-                %finish %else %if (AL <= source_value) %and (source_value <= BH) %start
+                %finish %else %if (AL <= source_value <= BH) %start
                     dumpmr8(opId, top_base!top_scope, top_disp, top_extdisp, source_value )
                 %finish %else %start
                     select output(Listing)
@@ -673,9 +696,9 @@
                     newline
                 %finish
             %finish %else %if (top_type = shorttype) %start
-                %if (EAX <= source_value) %and (source_value <= EDI) %start
+                %if (EAX <= source_value <= EDI) %start
                     dumpmr16(opId, top_base!top_scope, top_disp, top_extdisp, source_value )
-                %finish %else %if (AX <= source_value) %and (source_value <= BX) %start
+                %finish %else %if (AX <= source_value <= BX) %start
                     dumpmr16(opId, top_base!top_scope, top_disp, top_extdisp, source_value )
                 %finish %else %start
                     select output(Listing)
@@ -717,9 +740,9 @@
             select output(Listing)
             Stack Var( source_value )
 
-            %if (EAX <= target_value) %and (target_value <= EDI) %start
+            %if (EAX <= target_value <= EDI) %start
                 dumprv( opId, target_value, top )
-            %finish %else %if (AL <= target_value) %and (target_value <= BH) %start
+            %finish %else %if (AL <= target_value <= BH) %start
                 dumpr8v( opId, target_value, top )
             %finish %else %start
                 select output(Listing)
@@ -731,13 +754,13 @@
             -> esac source
 
         srce(register):
-            %if (EAX <= target_value) %and (target_value <= EDI) %and (EAX <= source_value) %and (source_value <= EDI) %start
+            %if (EAX <= target_value <= EDI) %and (EAX <= source_value <= EDI) %start
                 ! Operation on two 32-bit registers
                 dumprr(opId, target_value, source_value )
-            %finish %else %if (AL <= target_value) %and (target_value <= BH) %and (AL <= source_value) %and (source_value <= BH) %start
+            %finish %else %if (AL <= target_value <= BH) %and (AL <= source_value <= BH) %start
                 ! Operation on two 8-bit registers
                 dumprr8(opId, target_value, source_value )
-            %finish %else %if (EAX <= target_value) %and (target_value <= EDI) %and (AX <= source_value) %and (source_value <= BX) %start
+            %finish %else %if (EAX <= target_value <= EDI) %and (AX <= source_value <= BX) %start
                 ! Special operation on 32-bit target from 16-bit source registers
                 dumprrx(opId, target_value, source_value )
             %finish %else %start
@@ -756,9 +779,9 @@
             printstring(" EXPERIMENTAL IMPLEMENTATION")
             newline
 
-            %if (EAX <= target_value) %and (target_value <= EDI) %start
+            %if (EAX <= target_value <= EDI) %start
                 dumprm(opId, target_value, source_value, source_offset, source_offset )
-            %finish %else %if (AL <= target_value) %and (target_value <= BH) %start
+            %finish %else %if (AL <= target_value <= BH) %start
                 dumprm8(opId, target_value, source_value, source_offset, source_offset )
             %finish %else %start
                 select output(Listing)
@@ -788,13 +811,13 @@
             -> esac source
 
         srce(register):
-            %if (EAX <= source_value) %and (source_value <= EDI) %start
+            %if (EAX <= source_value <= EDI) %start
                 ! source is 32-bit register
                 dumpmr32(opId, target_value, target_offset, 0, source_value)
-            %finish %else %if (AX <= source_value ) %and (source_value<= BX) %start
+            %finish %else %if (AX <= source_value <= BX) %start
                 ! source is 16-bit register
                 dumpmr16(opId, target_value, target_offset, 0, source_value)
-            %finish %else %if (AL <= source_value) %and (source_value <= BH) %start
+            %finish %else %if (AL <= source_value <= BH) %start
                 ! source is 8-bit register
                 dumpmr8(opId, target_value, target_offset, 0, source_value)
             %finish %else %start

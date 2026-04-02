@@ -79,7 +79,7 @@
             i = i+1
             char(i) = sym
             read symbol(sym)
-            %exit %unless (('A'<=sym) %and (sym<='Z') )%or (('0'<=sym) %and (sym<='9'))
+            %exit %unless ('A'<=sym<='Z') %or ('0'<= sym <='9')
         %repeat
         i = i+1
         char(i) = 0
@@ -721,8 +721,8 @@ l10:    select output(dlist)
                 j = 32<<2
             %finish
             { let:0  dig:1  term:2  other:3 }
-            j = j+3 %unless ('A' <= i) %and (i <= 'Z')
-            j = j-2 %if ('0' <= i) %and (i <= '9')
+            j = j+3 %unless ('A' <= i <= 'Z')
+            j = j-2 %if ('0' <= i <= '9')
             j = j-1 %if (i = ';')
             keydict(i) = j
         %repeat

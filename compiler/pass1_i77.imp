@@ -46,7 +46,7 @@
 {      2) has 32-bit and 8-bit arithmetic instructions         }
 {      3) base address byte holds the least significant byte   }
 
-%externalstring(15) P1 Version = "8.4-2024.12.18"
+%externalstring(15) P1 Version = "8.4-2026.03.14"
 
 ! This source file is using the IMP: mechanism to determine the folder
 ! containing the requested include file
@@ -129,18 +129,18 @@
     {                        e                                    }
     {                                                             }
 
-    %constinteger used bit   = b'1000000000000000'
-    %constinteger closed     = b'0100000000000000'
-    %constinteger const bit  = b'0010000000000000'
-    %constinteger parameters = b'0001000000000000'
-    %constinteger subname    = b'0000100000000000'
-    %constinteger aname      = b'0000010000000000'
-    %constinteger own bit    = b'0000001000000000'
-    %constinteger prot       = b'0000000100000000'
-    %constinteger spec       = b'0000000010000000'
+    %constshort used bit   = b'1000000000000000'
+    %constshort closed     = b'0100000000000000'
+    %constshort const bit  = b'0010000000000000'
+    %constshort parameters = b'0001000000000000'
+    %constshort subname    = b'0000100000000000'
+    %constshort aname      = b'0000010000000000'
+    %constshort own bit    = b'0000001000000000'
+    %constshort prot       = b'0000000100000000'
+    %constshort spec       = b'0000000010000000'
 
-    %constinteger trans bit  = x'4000'
-    %constinteger error      = x'8000'
+    %constshort trans bit  = x'4000'
+    %constshort error      = x'8000'
 
     %record(arfm)%array ar(1:rec size)
 
@@ -177,7 +177,7 @@
     %owninteger protection   = 0
     %owninteger atom flags   = 0
     %owninteger otype        = 0          { current 'own' type }
-    %owninteger reals ln     = 1          { =4 for %REALSLONG }
+    %owninteger reals ln     = 4          { 1 for %real, 4 for %longreal }
     %owninteger last1        = 0          { previous atom class }
     %owninteger gen type     = 0
     %owninteger ptype        = 0          { current phrase type }
@@ -680,11 +680,11 @@ esac:
             %end { of "set cell" }
 
             %routine class(%record(tagfm)%name v)
-                %constinteger err    = 89
-                %constinteger rtp    = 100
-                %constinteger fnp    = 101
-                %constinteger mapp   = 102
-                %constinteger predp  = 103
+                %constinteger err    = 89   {  89 ADDOP=error as not built-in }
+                %constinteger rtp    = 100  { 100 [routine parameter]         }
+                %constinteger fnp    = 101  { 101 [function parameter]        }
+                %constinteger mapp   = 102  { 102 [map parameter]             }
+                %constinteger predp  = 103  { 103 [predicate parameter]       }
                 %constintegerarray class map(0:15) = %c
                              err,   1764,    247,     err,
                              err,    err,    err,    -rtp,
@@ -714,7 +714,7 @@ esac:
                 class(v)                        { deduce class from tag }
                 %if (c < 0) %start              { insert %PARAM==196 }
                     c = -c
-                    set cell(196, tp)
+                    set cell(196, tp)           { 196 %PARAM }
                     tp = -1
                 %finish
                 set cell(c, tp)
@@ -1041,7 +1041,7 @@ in:                 search base = rbase %if (this >= 0) %and (d # 0)  { record e
                             %return
                         %finish
                         %if (7 <= decl&15 <= 10) %and (decl&spec = 0) %start
-                            {procedure definition after spec}
+                            { procedure definition after spec }
                             %if ((decl!!atom flags)&b'1111111' = 0) %start    { correct type? }
                                 t_flags = t_flags-spec
                                 spec given = 1 { procedure }
@@ -1696,6 +1696,7 @@ act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
                 ->more
 
             %finish
+
             for warn = pos1 %if (x <= local)    { %for TEST }
             ->more
 
@@ -1818,7 +1819,7 @@ a4:             nmax = nmax+1
 a5:         { reverse links }
             s = 0
             %while (node # 0) %cycle
-                z == ar(node&x'ffff')_link
+                z == ar(node)_link
                 k = z
                 z = s
                 s = node
@@ -1878,7 +1879,7 @@ act(182):   { %DECL [escape to declarator] }
 act(199):   { %COMPILE [compile phrase] }
             s = 0
             %while (node # 0) %cycle
-                z == ar(node&x'ffff')_link
+                z == ar(node)_link
                 k = z
                 z = s
                 s = node
@@ -1901,7 +1902,7 @@ act(184):   { %ZERO [check record=0] }
 act(185):   { %APPLY [apply parameters] }
             s = 0
             %while (node # 0) %cycle
-                z == ar(node&x'ffff')_link
+                z == ar(node)_link
                 k = z
                 z = s
                 s = node
@@ -2600,9 +2601,9 @@ c(50):      { ACOMP }
             ->cop
 
 c(49):      { COMP }
-            %if (next # 0) %start             { comparator }
+            %if (next # 0) %start           { comparator }
                 add char( iCodeCOMPARED )
-                push(0)                         { double sided }
+                push(0)                     { double sided }
             %finish %else %start
                 add char( iCodeCOMPARE )
             %finish
@@ -2737,7 +2738,7 @@ c(86):      { INCLUDE }
             %begin
                 { remove this event block for SKIMP or pre-event IMP versions }
                 %on 9 %start
-                    Abandon(9)
+                    abandon(9)
                 %finish
 
                 open input(3, include file)

@@ -43,9 +43,6 @@
 
 %external %routine pass2( %integername No Stats, No Faults, %integer Options)
 
-!    %include "Stream3L.inc"
-!    %include "Option3L.inc"
-
     %include "IMP:Stream3L.inc"
     %include "IMP:Option3L.inc"
 
@@ -419,18 +416,19 @@
     %constinteger   FMUL    = 48    { ST(i) = ST(0) * ST(i), and pop ST(0) }
     %constinteger   FDIV    = 49    { ST(i) = ST(i) / ST(0), and pop ST(0) }
     %constinteger   FDIVR   = 50    { ST(i) = ST(0) / ST(i), and pop ST(0) }
-    %constinteger   FCMP    = 51    { Compare ST(0) v ST(1) and pop twice  }
-    %constinteger   FCHS    = 52    { Complement sign of ST(0)             }
-    %constinteger   FABS    = 53    { ST(0) = |ST(0)|                      }
+    %constinteger   FCOMP   = 51    { Compare ST(0) v ST(1) and pop once   }
+    %constinteger   FCOMPP  = 52    { Compare ST(0) v ST(1) and pop twice  }
+    %constinteger   FCHS    = 53    { Complement sign of ST(0)             }
+    %constinteger   FABS    = 54    { ST(0) = |ST(0)|                      }
     ! Special floating point things
-    %constinteger   FSTSW   = 54    { AX = FPU status word, no checks      }
-    %constinteger   FLDZ    = 55    { Push +0.0 onto the FPU stack         }
-    %constinteger   FLDPI   = 56    { Push π onto the FPU stack            }
-    %constinteger   FLD1    = 57    { Push +1.0 onto the FPU stack         }
-    %constinteger   FLDL2T  = 58    { Push log2(10) onto the FPU stack     }
-    %constinteger   FLDL2E  = 59    { Push log2(e) onto the FPU stack      }
-    %constinteger   FLDLG2  = 60    { Push log10(2) onto the FPU stack     }
-    %constinteger   FLDLN2  = 61    { Push loge(2) onto the FPU stack      }
+    %constinteger   FSTSW   = 55    { AX = FPU status word, no checks      }
+    %constinteger   FLDZ    = 56    { Push +0.0 onto the FPU stack         }
+    %constinteger   FLDPI   = 57    { Push π onto the FPU stack            }
+    %constinteger   FLD1    = 58    { Push +1.0 onto the FPU stack         }
+    %constinteger   FLDL2T  = 59    { Push log2(10) onto the FPU stack     }
+    %constinteger   FLDL2E  = 60    { Push log2(e) onto the FPU stack      }
+    %constinteger   FLDLG2  = 61    { Push log10(2) onto the FPU stack     }
+    %constinteger   FLDLN2  = 62    { Push loge(2) onto the FPU stack      }
 
     ! modifiers to memory base for accessing global memory
     %constinteger   DATA    = 16_10
@@ -713,7 +711,7 @@
     { via var(var no)_idname                                           }
     { This saves some memory by not adding 256 bytes per stack entry   }
     %recordformat  stackfm( %string(255) idname,
-                            %integer var no,
+                            %integer stackid,var no,
                             %byteinteger aform, base,
                             %byteinteger type, form, scope, dim,
                             %integer disp, extdisp,
@@ -742,7 +740,7 @@
 
     { Math Co-processor uses a stack                     }
     { - we remember where it should be with this pointer }
-    %owninteger fpustack = 0
+    %owninteger fpu stack = 0
 
     { A general purpose workspace resource }
     %recordformat gp tag(%integer info, addr, flags, link)
@@ -784,6 +782,9 @@
 
     { start of parameter stack }
     %integer    parms
+
+    { compare double mode 0=off, 1=on }
+    %owninteger compare mode = 0
 
     { condition inversion flag }
     %owninteger invert = 0
@@ -939,7 +940,9 @@
     { ---------------------------------------------------------------- }
     %routine  show(%record(stackfm)%name v)
         %string(255) s
+
         ! JDM JDM The field widths have been tweaked to align columns
+        spaces(1); write(v_stackid,7)
         spaces(1); write(v_varno,5)
         printstring(" :" )
         s = get type name(v_type)
@@ -960,58 +963,72 @@
         spaces(1); write(v_pbase,3)
         ! JDM JDM retrieve the original variable name
         ! Beware case when (v_varno = 0) and (v_form = constant)
-        spaces(1); print string("'")        
-        print string(get symbol name(v_varno)) %unless (v_varno = 0) %and (v_form = constant)
+        spaces(1); print string("'")
+
+!!        print string(get symbol name(v_varno)) %unless (v_varno = 0) %and (v_form = constant)
+
+!!!        %if (v_varno = 0) %and (v_form = constant) %start
+!!!            print string(v_idname)
+!!!        %finish %else %if (v_varno = 0) %start
+!!!            print string(v_idname)
+!!!        %finish %else %start
+!!!            print string(get symbol name(v_varno))
+!!!        %finish
+ 
+        print string(v_idname)
+
         print string("'")
         newline
     %end { of "show" }
 
-    %routine dump tag var( %integer tag, %string(7) prefix )
-        %record(varfm)%name v
-
-        v == var(tag)
-
-        spaces(1); print string("VAR entry ".prefix); newline
-        spaces(5); print string("tag="); write(tag,0); newline
-        spaces(5); print string("name=".get symbol name(tag)); newline
-        spaces(5); print string("type=".get type name(v_type)); newline
-        spaces(5); print string("form=".get internal form name(v_form)); newline
-        spaces(5); print string("level="); write(v_level,0); newline
-        spaces(5); print string("scope="); write(v_scope,0); newline
-        spaces(5); print string("reloc=".relocname(v_scope>>4) ); newline
-        spaces(5); print string("dim="); write(v_dim,0); newline
-        spaces(5); print string("disp=".hexint(v_disp,8)." "); write(v_disp,0); newline
-        spaces(5); print string("extdisp="); write(v_extdisp,0); newline
-        spaces(5); print string("format="); write(v_format,0); newline
-        spaces(5); print string("size="); write(v_size,0); newline
-        spaces(5); print string("pbase="); write(v_pbase,0); newline
-        spaces(5); print string("extra="); write(v_extra,0); newline
-
-    %end { of "dump tag var" }
-
-    ! Simple ABORT routine
-    %routine abort(%string(255) message)
+    { Show the var stack }
+    %routine show stack( %integer channel )
         %integer j
 
-        select output(report)
+        %if (stp # 0) %start
+            select output(channel)
+            print string("STACK: depth ");write(stp,0);
+            print string("  FPU Stack: ");write(fpu stack,0)
+            newline
+            spaces(16)
+            printstring("  StackId  VarNo :           Typ        Frm Bse      Dsp  ExtDsp  Siz  Xtr  Fmt  Dim  Pba Name" )
+            newline
+            %for j = 1,1,stp %cycle
+                spaces(16)
+                show(stack(j))
+            %repeat
+            select output(Object Out)
+        %finish
+
+    %end { of "show stack" }
+
+    %routine show abort( %integer channel, %string(255) message)
+
+        select output( channel )
+        newline
+        print string("FPU Stack="); write(FPU Stack,0); newline
         printstring("Pass 2 abandoned at line ");
         write(current line, 0);
         printstring(" : ");
         printstring(message)
         newline
-        %if (stp # 0) %start
-            print string("STACK:");  newline
-            printstring("  StackId  VarNo :           Typ        Frm Bse      Dsp  ExtDsp  Siz  Xtr  Fmt  Dim  Pba Name" ); newline
-            %for j = 1,1,stp %cycle
-                spaces(1); write(j,7)
-                show(stack(j))
-            %repeat
-        %finish
+        show stack( channel )
+
+    %end { of "show abort" }
+
+    { ---------------------------------------------------------------- }
+    { >> ABORT <<                                                      }
+    { ---------------------------------------------------------------- }
+    %routine abort(%string(255) message)
+
+        show abort( report, message )
+        show abort( listing, message )
+
         %signal 0,-1,-1
     %end { of "abort" }
 
     { ---------------------------------------------------------------- }
-    {                                                  >> WARN <<      }
+    { >> WARN <<                                                       }
     { ---------------------------------------------------------------- }
     %routine  warn(%integer  n)
         %string(255) warning
@@ -1037,31 +1054,53 @@ at:
         select output(Object Out)
     %end { of "warn" }
 
-    { ---------------------------------------------------------------- }
-    {                                                  >> MONITOR <<   }
-    { ---------------------------------------------------------------- }
-    %routine  monitor(%record(stackfm)%name  v, %string(15) text)
-
-        select output(report)
+    { Show monitor details for specified channel }
+    %routine show monitor(%integer channel, %record(stackfm)%name v, %string(15) text)
+        select output(channel)
         print string(text)
         print symbol(':')
         spaces(15-length(text))
         show(v)
+    %end { of "monitor" }
+
+    { ---------------------------------------------------------------- }
+    { >> MONITOR <<                                                    }
+    { ---------------------------------------------------------------- }
+    %routine  monitor(%record(stackfm)%name  v, %string(15) text)
+
+        show monitor( report, v, text )
 
         %if (diagnose&16 # 0) %start
             ! only dump monitor data into listing if we have requested iCode data
-            select output(Listing)
-            print string(text)
-            print symbol(':')
-            spaces(15-length(text))
-            show(v)
+            show monitor( listing, v, text )
         %finish
 
         select output(object out)
     %end { of "monitor" }
 
     { ---------------------------------------------------------------- }
-    {                                                >> GET GP TAG <<  }
+    { >> FLOAT MONITOR <<                                              }
+    { ---------------------------------------------------------------- }
+    %routine  float monitor(%string(255) text)
+
+        select output(report)
+        print string(text)
+        print symbol(':')
+        newline
+
+        %if (diagnose&16 # 0) %start
+            ! only dump monitor data into listing if we have requested iCode data
+            select output(Listing)
+            print string(text)
+            print symbol(':')
+            newline
+        %finish
+
+        select output(object out)
+    %end { of "float monitor" }
+
+    { ---------------------------------------------------------------- }
+    { >> GET GP TAG <<                                                 }
     { ---------------------------------------------------------------- }
     %integerfn get gp tag
         %integer l
@@ -1073,7 +1112,7 @@ at:
     %end { of "get gp tag" }
 
     { ---------------------------------------------------------------- }
-    {                                                >> RET GP TAG <<  }
+    { >> RET GP TAG <<                                                 }
     { ---------------------------------------------------------------- }
     %integerfn ret gp tag(%integer index)
         %integer link
@@ -2196,10 +2235,10 @@ form( * ):      abort("Bad Push Mode-dumpvpush")
 esac:
     %end { of "dump vpush" }
       
-    !----------------------------------------------------------
-    ! Floating point instructions - much simpler since there are
-    ! only two forms - RR and RM
-
+    {----------------------------------------------}
+    { Floating point instructions are much simpler }
+    { there are only two forms - RR and RM         }
+    {----------------------------------------------}
     { N.B. ST(0) = Top of FPU stack     }
     {      ST(1) = 2nd on FPU stack     }
     {      ...                          }
@@ -2219,6 +2258,7 @@ esac:
     "FMULP",        { ST(i) = ST(0) * ST(i), and pop ST(0) }
     "FDIVP",        { ST(i) = ST(i) / ST(0), and pop ST(0) }
     "FDIVRP",       { ST(i) = ST(0) / ST(i), and pop ST(0) }
+    "FCOMP",        { Compare ST(0) v ST(1) and pop once   }
     "FCOMPP",       { Compare ST(0) v ST(1) and pop twice  }
     "FCHS",         { Complement sign of ST(0)             }
     "FABS",         { ST(0) = |ST(0)|                      }
@@ -2230,7 +2270,6 @@ esac:
     "FLDL2E",       { Push log2(e) onto the FPU stack      }
     "FLDLG2",       { Push log10(2) onto the FPU stack     }
     "FLDLN2"        { Push loge(2) onto the FPU stack      }
-
 
     ! The prefix opcode
     %constbyteintegerarray flprefix(FILD:FLDLN2) =
@@ -2246,6 +2285,7 @@ esac:
     16_DE, {FMULP}      { ST(i) = ST(0) * ST(i), and pop ST(0) }
     16_DE, {FDIVP}      { ST(i) = ST(i) / ST(0), and pop ST(0) }
     16_DE, {FDIVRP}     { ST(i) = ST(0) / ST(i), and pop ST(0) }
+    16_D8, {FCOMP}      { Compare ST(0) v ST(1) and pop once   }
     16_DE, {FCOMPP}     { Compare ST(0) v ST(1) and pop twice  }
     16_D9, {FCHS}       { Complement sign of ST(0)             }
     16_D9, {FABS}       { ST(0) = |ST(0)|                      }
@@ -2273,6 +2313,7 @@ esac:
     16_C8, {FMULP}      { ST(i) = ST(0) * ST(i), and pop ST(0) }
     16_F8, {FDIVP}      { ST(i) = ST(i) / ST(0), and pop ST(0) }
     16_F0, {FDIVRP}     { ST(i) = ST(0) / ST(i), and pop ST(0) }
+    16_D9, {FCOMP}      { Compare ST(0) v ST(1) and pop once   }
     16_D9, {FCOMPP}     { Compare ST(0) v ST(1) and pop twice  }
     16_E0, {FCHS}       { Complement sign of ST(0)             }
     16_E1, {FABS}       { ST(0) = |ST(0)|                      }
@@ -2285,20 +2326,40 @@ esac:
     16_EC, {FLDLG2}     { Push log10(2) onto the FPU stack     }
     16_ED  {FLDLN2}     { Push loge(2) onto the FPU stack      }
 
+    ! FPU stack change
+    %constintegerarray fpu stack delta(FILD:FLDLN2) =
+     1, {FILD}       { Load Integer onto the FPU Stack      }
+     1, {FLD DWORD}  { Load Real onto the FPU Stack         }
+     1, {FLD QWORD}  { Load LongReal onto the FPU Stack     }
+    -1, {FISTP}      { Pop FPU ST(0) as Integer to memory   }
+    -1, {FSTP DWORD} { Pop FPU ST(0) as Real to memory      }
+    -1, {FSTP QWORD} { Pop FPU ST(0) as Long Real to memory }
+    -1, {FADDP}      { ST(1) = ST(1) + ST(0), and pop ST(0) }
+    -1, {FSUBP}      { ST(1) = ST(1) - ST(0), and pop ST(0) }
+    -1, {FSUBRP}     { ST(i) = ST(0) - ST(i), and pop ST(0) }
+    -1, {FMULP}      { ST(i) = ST(0) * ST(i), and pop ST(0) }
+    -1, {FDIVP}      { ST(i) = ST(i) / ST(0), and pop ST(0) }
+    -1, {FDIVRP}     { ST(i) = ST(0) / ST(i), and pop ST(0) }
+    -1, {FCOMP}      { Compare ST(0) v ST(1) and pop once   }
+    -2, {FCOMPP}     { Compare ST(0) v ST(1) and pop twice  }
+     0, {FCHS}       { Complement sign of ST(0)             }
+     0, {FABS}       { ST(0) = |ST(0)|                      }
+     0, {FSTW AX}    { AX = FPU status word, no checks      }
+     1, {FLDZ}       { Push +0.0 onto the FPU stack         }
+     1, {FLDPI}      { Push π onto the FPU stack            }
+     1, {FLD1}       { Push +1.0 onto the FPU stack         }
+     1, {FLDL2T}     { Push log2(10) onto the FPU stack     }
+     1, {FLDL2E}     { Push log2(e) onto the FPU stack      }
+     1, {FLDLG2}     { Push log10(2) onto the FPU stack     }
+     1  {FLDLN2}     { Push loge(2) onto the FPU stack      }
+
+
     ! Plant a Floating Point Reg <- Memory operation
     ! BASE is an internal ID, not actual register number
     ! Destination register is implicitly the stack top
     %routine dumpfloprm( %integer opn, base, disp, extdisp )
 
-        %if (opn <= FLDQ) %start
-            ! a load type
-            fpu stack = fpu stack + 1
-            %if (fpu stack > 8) %then abort("FPU Stack Overflow")
-        %else
-            fpu stack = fpu stack - 1
-            %if (fpu stack < 0) %then abort("FPU Stack Underflow")
-        %finish
-
+        { Output the FPU instructions }
         ! JDM JDM old code used with external 8087 numeric co-processor
 !        putbyte(16_9B);         ! we prepend a WAIT to everything
         putbyte(flprefix(opn))
@@ -2311,6 +2372,15 @@ esac:
         newline
 
         writeifrecord(IF OBJ)
+
+        { Now recalculate the next free FPU reg slot }
+        fpu stack = fpustack + fpu stack delta( opn )
+
+        float monitor("FLOAT RM '".flopname(opn)."' New fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+
+        %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpfloprm")
+        %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpfloprm")
+
     %end { of "dump floprm" }
 
     ! Plant a Floating Point Reg <- Reg operation
@@ -2321,16 +2391,10 @@ esac:
 
         top = fpustack + (FR0 - 1)
 
-        %if (reg2 # top) %then abort("FPU Stack Address")
+!        %if (reg2 # top) %then abort("FPU Stack Address")
+        %if (reg2 # top) %and (reg1 # top) %then abort("FPU Stack Address-dumpfloprr top=".itos(top,0)." reg1=".itos(reg1,0)." reg2=".itos(reg2,0))
 
-        %if (opn < FCHS) %start
-            ! two operands - will pop one
-            fpu stack = fpu stack - 1
-            ! COMPP pops both registers
-            %if (opn = FCMP) %then fpu stack = fpu stack - 1
-            %if (fpu stack < 0) %then abort("FPU Stack Underflow")
-        %finish
-
+        { Output the FPU instructions }
         ! JDM JDM old code used with external 8087 numeric co-processor
 !        putbyte(16_9B);         ! we prepend a WAIT to everything
         putbyte(flprefix(opn))
@@ -2345,17 +2409,21 @@ esac:
         newline
 
         writeifrecord(IF OBJ)
+
+        { Now recalculate the next free FPU reg slot }
+        fpu stack = fpustack + fpu stack delta( opn )
+
+        float monitor("FLOAT RR '".flopname(opn)."' new fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+
+        %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpfloprr")
+        %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpfloprr")
+
     %end { of "dump floprr" }
 
     ! Plant a "special" floating point operation
     %routine dumpflopspec(%integer opn)
 
-        %if (opn >= FLDZ) %start
-            ! load a constant
-            fpu stack = fpu stack + 1
-            %if (fpu stack > 8) %then abort("FPU Stack Overflow")
-        %finish
-
+        { Output the FPU instructions }
         ! JDM JDM old code used with external 8087 numeric co-processor
 !        putbyte(16_9B);         ! we prepend a WAIT to everything
         putbyte(flprefix(opn))
@@ -2366,6 +2434,15 @@ esac:
         newline
 
         writeifrecord(IF OBJ)
+
+        { Now recalculate the next free FPU reg slot }
+        fpu stack = fpustack + fpu stack delta( opn )
+
+        float monitor("FLOAT SPEC '".flopname(opn)."' fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+
+        %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpflopspec")
+        %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpflopspec")
+
     %end { of "dump flopspec" }
 
     %routine dumpjump( %integer opn, labelid )
@@ -3405,7 +3482,7 @@ out1:
             ! If we need to save something lower down,
             ! we need to pop the things above me first...
             ! and recurse as required
-            %if (reg - FR0 >= FPU Stack) %then hazard(reg+1)
+            %if (reg >= FR0 + FPU Stack) %then hazard(reg+1)
             type = longrealtype
             t = getwork(8)
             dumpfloprm(FSTQ, EBP, t, 0)
@@ -3901,18 +3978,51 @@ out1:
         ! >> POP STACK <<
         ! Pop the top of the stack
         %routine  Pop Stack
-            %if (stp = 0) %then abort("Pop")
             monitor(top, "Pop") %if (diagnose&1 # 0)
+            %if (stp = 0) %then abort("Pop")
             stp = stp - 1
             %if (stp # 0) %then top == stack(stp) %else top == null
         %end { of "Pop Stack" }
 
+        ! >> SWOP STACK <<
+        ! Swop the two var stack records
+        %routine swap(%record(stackfm)%name  lhs, rhs)
+            %record(stackfm) temp
+            %integer lhsid, rhsid
+
+            { pre-swop the stack id's }
+            lhsid = rhs_stackid
+            rhsid = lhs_stackid
+
+            { swop the lhs and rhs }
+            temp = lhs
+            lhs = rhs
+            rhs = temp
+
+            { update the stack id's } 
+            lhs_stackid = lhsid
+            rhs_stackid = rhsid
+        %end { of "swap" }
+
         ! >> POP REL <<
-        ! Pop the top of the stack, and release its' register
+        ! First, release the register attached to the top of the stack
+        ! Finally, pop the top of the stack
         %routine  pop rel
             release(top_base)
             pop stack
         %end { of "pop rel" }
+
+        ! >> PUSH COPY <<
+        ! Push a duplicate of a stack record onto the stack
+        %routine  push copy(%record(stackfm)%name  v)
+            stp = stp + 1
+            %if (stp > Max Stack) %then abort("Stack Copy")
+            top == stack(stp)
+            top_stackid = stp
+            top = v
+
+            monitor(top, "Stack Copy") %if (diagnose&1 # 0)
+        %end { of "push copy" }
 
         %constbyteintegerarray fmap(0:15) =
                              0,          V in S,               A in S,    pgm label,
@@ -3938,6 +4048,7 @@ out1:
             %if (stp > Max Stack) %then abort("Push V Stack Overflow")
             top == stack(stp)
             top = 0
+            top_stackid = stp
 
             ! Translate "level" into "base register" - if it is non local
             ! we flag it by adding 16 to the desired level, which later will
@@ -3969,16 +4080,21 @@ out1:
             monitor(top, "Var stack") %if (diagnose&1 # 0)
         %end { of "Stack Var" }
 
-        ! >> PUSH COPY <<
-        ! Push a duplicate of a stack record onto the stack
-        %routine  push copy(%record(stackfm)%name  v)
-            stp = stp + 1
-            %if (stp > Max Stack) %then abort("Stack Copy")
-            top == stack(stp)
-            top = v
+        %string(255) %function ltrim( %string(255) sx )
+            %string(255) s
 
-            monitor(top, "Stack Copy") %if (diagnose&1 # 0)
-        %end { of "push copy" }
+            s = sx
+            s = sub string(s, 2, length(s)) %while charno(s,1)=' '
+            %result = s
+        %end
+        
+        %string(255) %function trim real( %string(255) sx )
+            %string(255) s
+
+            s = ltrim(sx)
+            length(s) = length(s) - 1 %while (charno(s,length(s))='0') %and (charno(s,length(s) - 1) # '.')
+            %result = s
+        %end
 
         ! >> PUSH CONST <<
         ! Push a constant on the stack
@@ -3987,14 +4103,32 @@ out1:
             %if (stp > Max Stack) %then abort("Stack Const")
             top == stack(stp)
             top = 0
+            top_stackid = stp
             top_disp = n
             top_extdisp = 0
             top_type = integertype
             top_form = constant
-            top_idname = itos(n,0)
+            top_idname = ltrim(itos(n,0))
 
             monitor(top, "push const") %if (diagnose&1 # 0)
         %end { of "push const" }
+
+        ! >> PUSH REAL CONST <<
+        ! Push a (l)real constant on the stack
+        %routine  push real const(%longreal f )
+            stp = stp + 1
+            %if (stp > Max Stack) %then abort("Stack (L)Real Const")
+            top == stack(stp)
+            top = 0
+            top_stackid = stp
+            top_disp = getcotdouble(f)
+            top_extdisp = 0
+            top_type = longrealtype
+            top_form = constant
+            top_idname = trim real(f to s( f, 16))
+
+            monitor(top, "push real const") %if (diagnose&1 # 0)
+        %end { of "push real const" }
 
         !---------------------------------------------------------------------
         !STRING PROCESSING
@@ -4032,11 +4166,12 @@ out1:
             !  anonymous %const
             ! So insert into/retrieve from the COT table
             otype = con
-            push const( getcotdouble(r) )
+            push real const( r )
             top_type = longrealtype
             top_scope = COT
             top_form = V in S
             top_format = 8
+            top_idname = trim real(f to s( r, 16))
 
 !            %if (r = 0) %then %start
 !                push const(0)
@@ -4300,12 +4435,10 @@ out1:
             %if (form = A V in S) %start
                 %if (v_base = 0) %start
                     v_form = constant
-                %else
-                    %if (v_disp = 0) %and (v_scope = 0) %start
-                        v_form = V in R
-                    %else
-                        loadreg(v, any)
-                    %finish
+                %finish %else %if (v_disp = 0) %and (v_scope = 0) %start
+                    v_form = V in R
+                %finish %else %start
+                    loadreg(v, any)
                 %finish
                 %return
             %finish
@@ -4364,7 +4497,7 @@ out1:
                         claim(r)
                         v_disp = 0
                         v_form = V in R
-                        v_type = realtype
+                        v_type = longrealtype
                         %return
                     %finish
                     ! Otherwise, we need it in store
@@ -4385,7 +4518,7 @@ out1:
                     %finish
                 %finish
 
-                ! register is going to be the top of stack
+                ! register is going to be the top of FPU stack
                 r = FR0 + FPU Stack
 
                 dumpfloprm(op, v_base!v_scope, v_disp, v_extdisp )
@@ -4394,7 +4527,7 @@ out1:
                 claim(r)
                 v_disp = 0
                 v_form = V in R
-                v_type = realtype
+                v_type = longrealtype
                 %return
             %finish
 
@@ -4534,9 +4667,14 @@ f(A in S):
                 ! otherwise a more expensive clear later
                 %if (r = v_base) %then dumpri(AND, r, 255)
                 v_type = integertype
-            %finish %else %start
+            %finish %elseif (v_type = realtype) %start
                 ! reals
-                abort("Load Real")
+                abort("Load Real A in S")
+            %finish %elseif (v_type = longrealtype) %start
+                ! reals
+                abort("Load LongReal A in S")
+            %finish %else %start
+                abort("Load Unknown type")
             %finish
             release(v_base)
             v_base = r
@@ -4563,9 +4701,14 @@ f(V in S):
                 ! otherwise a more expensive clear later
                 %if (r = v_base) %then dumpri(AND, r, 255)
                 v_type = integertype
-            %finish %else %start
+            %finish %else %if (v_type = realtype) %start
                 ! reals
-                abort("Load Real")
+                abort("Load Real V in S")
+            %finish %else %if (v_type = longrealtype) %start
+                ! reals
+                abort("Load LongReal V in S")
+            %finish %else %start
+                abort("Load Unknown type")
             %finish
             release(v_base)
             v_base = r
@@ -4592,7 +4735,7 @@ f(A V in S):
             v_form = V in R
             claim(r)
             %return
-        %end { of "Losd Reg" }
+        %end { of "Load Reg" }
 
         !                                              >> OPERATION <<
         ! perform the operation OP on the top two elements of the stack.
@@ -4601,20 +4744,15 @@ f(A V in S):
             %record(stackfm)%name  lhs, rhs
             %integer assign pending, work, value, s
             %switch oper(1:17), roper(1:17), fold(1:17)
+            
+            { Algn entries for opmap and flopmap for clarity }
             %constintegerarray opmap(1:17) = 
-            ADD, SUB, IMUL, IDIV,  0,  AND, OR, XOR, SHL, SHR, IDIV,   0,    0,   0,  NOT, NEG,   0
+            ADD,   SUB, IMUL, IDIV,  0,  AND, OR, XOR, SHL, SHR, IDIV,   0,    0,    0,  NOT,  NEG,    0
 
             %constintegerarray flopmap(1:17) = 
-            FADD, FSUB, FMUL, FDIV, 0, 0, 0, 0, 0, 0, 0,   0,   0,    FDIV, 0, FCHS, FABS
+            FADD, FSUB, FMUL, FDIV,  0,    0,  0,   0,   0,   0,    0,   0,    0, FDIV,    0, FCHS, FABS
 
             %constintegerarray indec(-1:1) = DEC, 0, INC; ! decrement, and increment opcodes
-
-            %routine swap
-                %record(stackfm) temp
-                temp = lhs
-                lhs = rhs
-                rhs = temp
-            %end { of "swap" }
 
             assign pending = 0
             rhs == top
@@ -4674,7 +4812,7 @@ oper(ABSx):
             %return
 
 oper(ADDX):
-            %if (lhs_form = constant) %then swap
+            %if (lhs_form = constant) %then swap(lhs,rhs)
             ! and fall through to minus
 oper(SUBx):
             ! First look for fred = fred + <whatever>
@@ -4770,7 +4908,7 @@ oper(SUBx):
             %finish %else %start
                 ! not a constant
                 ! commutative?, so flip it
-                %if (op = ADDx) %and (rhs_form = V in R) %then swap
+                %if (op = ADDx) %and (rhs_form = V in R) %then swap(lhs,rhs)
                 loadreg(lhs, any)
                 %if (rhs_type = bytetype) %start
                     loadreg(rhs, any)
@@ -4805,7 +4943,7 @@ oper(ANDx):
 oper(ORx):
 oper(XORx):
             !  Logical ops are a subset of ADD - similar behaviour, but no inc/dec/addr short forms
-            %if lhs_form = constant %then swap
+            %if lhs_form = constant %then swap(lhs,rhs)
             ! First look for fred = fred <op> <whatever>
             %if (assign pending # 0) %then %start
                 ! we will do the assignment ourselves
@@ -4879,7 +5017,7 @@ oper(XORx):
             %finish %else %start
                 ! not a constant
                 ! all these are commutative, so flip it to make it easier
-                %if (rhs_form = V in R) %then swap
+                %if (rhs_form = V in R) %then swap(lhs,rhs)
                 loadreg(lhs, any)
                 %if (rhs_type = bytetype) %and (op = ANDx) %start
                     ! AND needs all the bits to make sense
@@ -4903,7 +5041,7 @@ oper(XORx):
             %return
 
 oper(MULx):
-            %if (lhs_form = constant) %or (rhs_base = EAX) %then swap
+            %if (lhs_form = constant) %or (rhs_base = EAX) %then swap(lhs,rhs)
             %if (rhs_form = constant) %then %start
                 value = rhs_disp
                 %if (value = 0) %then %start
@@ -5285,7 +5423,7 @@ roper(ABSx):
 roper(ADDx):
 roper(MULx):
             ! Commutative, so we don't care
-            %if (lhs_base > rhs_base) %then swap
+            %if (lhs_base > rhs_base) %then swap(lhs,rhs)
             dumpfloprr(flopmap(op), lhs_base, rhs_base)
             pop rel
             %return
@@ -5298,7 +5436,7 @@ roper(RDIVx):
             ! more than the basic opcode index)
             op = flopmap(op)
             %if (lhs_base > rhs_base) %start
-                swap
+                swap(lhs,rhs)
                 op = op + 1
             %finish
             dumpfloprr(op, lhs_base, rhs_base)
@@ -5631,9 +5769,7 @@ roper(EXPx):
                     ! JDM JDM comment
                     ! The next iCode should be CALL (if not then an ERROR has arisen)
                     ! So swop the stack entries ensuring the internal macro has valid parameters
-                    temp = lh
-                    lh = rh
-                    rh = temp
+                    swap(lh,rh)
                     %return
                 %finish
 
@@ -6039,34 +6175,41 @@ roper(EXPx):
             abort("Compare Records")
         %end { of "Compare records" }
 
-        !                                              >> COMPARE REALS <<
+        !  >> COMPARE REALS <<
         %routine  compare reals(%record(stackfm)%name  l,r)
-            loadreg(l, anyf)
+            %integer compare flop inst
+
+            compare flop inst = FCOMPP
+            %if (compare mode = 1) %then compare flop inst = FCOMP
             loadreg(r, anyf)
+            loadreg(l, anyf)
             hazard(EAX)
-            ! who's ended up on top?
-            ! l_base is the top of the FPU stack
-            %if (l_base > r_base) %start
-                dumpfloprr(FCMP, r_base, l_base)
-            %else
-                dumpfloprr(FCMP, l_base, r_base)
-                invert = invert !! 1
-            %finish
+!!            ! who's ended up on top?
+!!            ! l_base is the top of the FPU stack
+!!            %if (l_base > r_base) %start
+!!                dumpfloprr(compare flop inst, r_base, l_base)
+!!            %else
+!!                dumpfloprr(compare flop inst, l_base, r_base)
+!!                invert = invert !! 1
+!!            %finish
+
+            dumpfloprr(compare flop inst, l_base, r_base)
+!!            invert = invert !! 1
+
+
             ! puts status into EAX
             dumpflopspec(FSTSW)
             ! and move it to flags
             dumpsimple(SAHF)
             ! because FPU reports as if operands were unsigned
             compare unsign = 1
-        %end { of "Compsre Reals" }
+        %end { of "Compare Reals" }
 
-        !                                              >> COMPARE STRINGS <<
+        !  >> COMPARE STRINGS <<
         %routine  compare strings(%record(stackfm)%name  l,r)
             %record(stackfm)%name  temp
             %if (l_base = COT) %and (l_disp = null string) %start
-                temp == r
-                r == l
-                l == temp
+                swap(l,r)
                 invert = invert !! 1
             %finish
             %if (r_base = COT) %and (r_disp = null string) %start
@@ -6084,7 +6227,7 @@ roper(EXPx):
             %finish
         %end { of "compare strings" }
 
-        !                                              >> COMPARE <<
+        !  >> COMPARE <<
         %routine  compare(%record(stackfm)%name  l,r)
             %if (l_type = generaltype) %or (l_type = stringtype) %start
                 compare strings(l,r)
@@ -6116,7 +6259,7 @@ roper(EXPx):
             dumprv(CMP, l_base, r)
         %end { of "compare" }
 
-        !                                              >> RESOLVE <<
+        !  >> RESOLVE <<
         %routine  resolve( %integer  flag )
 
             !S -> A.(B).C
@@ -6140,6 +6283,7 @@ roper(EXPx):
             %if (flag&4 # 0) %then dumpri(CMP, EAX, 0)
         %end { of "resolve" }
 
+        !  >> DUMP ENTER <<
         %integerfn enter
             %integer cad;
 
@@ -6155,7 +6299,7 @@ roper(EXPx):
             %result = cad;
         %end { of "enter" }
 
-        !                                              >> DUMP RETURN <<
+        !  >> DUMP RETURN <<
         %routine  dump return
             %return %if (uncond jump = next cad);          !  can't get here ?
 
@@ -6198,7 +6342,7 @@ roper(EXPx):
             v_size = 1
         %end { of "compile to string" }
 
-        !                                              >> COMPILE CALL <<
+        ! >> COMPILE CALL <<
         ! Call the routine on the top of the stack.  Note - the parameters
         ! are all hidden underneath the routine, so we need to push them
         ! here
@@ -6247,7 +6391,7 @@ roper(EXPx):
                 pop rel
 
                 ! JDM JDM defend against out-of-range value for t
-                t = 0 %unless (0 < t < 16)
+                t = 0 %unless (0 < t < 15)
                 abort("Illegal %prim macro") %unless (0 < t < 15)
 
                 ! JDM JDM show start of macro "call" in listing
@@ -6442,7 +6586,7 @@ esac:
             %finish
         %end { of "Compile Call" }
 
-        !                                              >> COMPILE FOR <<
+        ! >> COMPILE FOR <<
         %routine  compile for( %integer lab )
             %record(stackfm)%name  cv, iv, inc, fv
             %integer  n
@@ -6507,6 +6651,7 @@ esac:
             assign(1)
         %end { of "compile for" }
 
+        ! >> COMPILE END OF BLOCK <<
         %routine End of Block
             %if (amode >= 0) %start
                 ! No return code for %endoffile
@@ -6517,6 +6662,7 @@ esac:
             %finish
         %end { of "End of Block" }
 
+        ! >> COMPILE BEGIN <<
         %routine Compile Begin
             decvar == begin
             decvar_disp = new tag
@@ -6606,6 +6752,7 @@ ot(labeltype):
 done:
         %end { of "adump" }
 
+        ! >> USER LABEL <<
         %integerfn user label(%integer lab)
             %record(varfm)%name v
             %if (lab > names) %start
@@ -6619,21 +6766,38 @@ done:
             %result = var(lab)_disp
         %end { of "user label" }
 
+        ! >> COMPARE DOUBLE <<
         %routine Compare Double
+
             LHS == stack(stp-1)
             RHS == top
-            loadreg(rhs, any)
-            ! We happen to know that Compare loads the left parameter in a register.
-            ! We've already got RHS in a register, so we flip the LHS and RHS to the
-            ! comparison and set Invert accordingly
-            compare(rhs, lhs)
+
+            %if (diagnose&4 # 0) %start     
+                show stack( Listing )
+            %finish
+
+            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
+            compare mode = 1
+            swap(lhs,rhs)
+            compare(lhs,rhs)
             invert = 1
-            ! release LH and then overwrite it with RH
-            release(lhs_base)
-            lhs = rhs
+            release(rhs_base)
             pop stack
+            compare mode = 0
+!!            ! We happen to know that Compare loads the left parameter in a register.
+!!            ! We've already got RHS in a register, so we flip the LHS and RHS to the
+!!            ! comparison and set Invert accordingly
+!!            compare(rhs, lhs)
+!!            invert = 1
+!!            ! release LH and then overwrite it with RH
+!!            release(lhs_base)
+!!            id = lhs_stackid
+!!            lhs = rhs
+!!            lhs_stackid = id
+!!            pop stack
         %end { of "Compare Double" }
 
+        ! >> COMPARE VALUES <<
         %routine Compare Values
             LHS == stack(stp-1)
             RHS == top
@@ -6642,12 +6806,14 @@ done:
             pop rel
         %end { of "Compare Values" }
 
+        ! >> COMPARE ADDRESSES <<
         %routine Compare Addresses
             amap(stack(stp-1));                  ! Now do same as compare values
             %if (top_form # 0) %then amap(top)
             Compare Values
         %end { of "Compare Addresses" }
 
+        ! >> DEFINE COMPILER LABEL <<
         %routine Define Compiler Label( %integer label )
 
             %if (label = 0) %start
@@ -6659,6 +6825,7 @@ done:
             %finish
         %end { of "Define Compiler Label" }
 
+        ! >> INIT <<
         %routine Init( %integer N )
             ! N = Number of values to assign
             %integer j
@@ -6711,6 +6878,7 @@ done:
             %finish
         %end { of "Init" }
 
+        ! >> RETURN <<
         %routine Return( %integer mode )
             ! JDM JDM replaces sequence of %if .. %then .. %else code
             ! to use %switch layout for clarity
@@ -6821,6 +6989,7 @@ done:
             dump return
         %end { of "Return" }
 
+        ! >> DIMENSION <<
         %routine Dimension( %integer dim, n )
             %integer i,j, useCOT, descriptor
 
@@ -6999,6 +7168,7 @@ done:
             %finish
         %end { of "Dimension" }
 
+        ! >> UPDATE LINE <<
         %routine Update Line( %integer line )
 
             current line = line
@@ -7014,6 +7184,7 @@ done:
             %finish
         %end { of "Update Line" }
 
+        ! >> SWITCH DUMP <<
         %routine Switch Jump( %integer switch id )
             v == var( switch id )
             push const(cWordSize)
@@ -7024,11 +7195,13 @@ done:
             uncond jump = next cad
         %end { of "Switch Jump" }
 
+        ! >> SET RECORD FORMAT <<
         %routine Set Record Format( %integer format id )
             top_format = format id
             top_type   = recordtype
         %end { of "Set Record Format" }
 
+        ! >> SWITCH LABEL <<
         %routine Switch Label( %integer switch label id )
 
             v == var( switch label id )
@@ -7041,6 +7214,7 @@ done:
             swtab(v_disp+j) = t
         %end { of "Switch Label" }
 
+        ! >> CONSTANT BOUNDS <<
         %routine Constant Bounds
             vub = top_disp
             pop stack
@@ -7049,6 +7223,7 @@ done:
             pop stack
         %end { of "Constant Bounds" }
 
+        ! >> INTERNAL HANDLER <<
         %routine Internal Handler ( %integer id )
             %record(stackfm)%name  lh,rh
             %record(stackfm)  temp
@@ -7060,9 +7235,7 @@ done:
             ! So swop the stack entries ensuring the internal macro has valid parameters
             rh == top
             lh == stack(stp-1)
-            temp = lh
-            lh = rh
-            rh = temp
+            swap( lh, rh )
 
             ! Now, stack the event_event value
             push const( id )
@@ -7081,10 +7254,12 @@ done:
             uncond jump = next cad %if (id # -1);     ! %monitor will return
         %end { of "Internal Handler" }
 
+        ! >> MONITOR <<
         %routine Monitor
             Internal Handler ( -1 )
         %end { of "Monitor" }
 
+        ! >> SELECT FIELD <<
         %routine SelectField( %integer field index )
 
             ! Contrary to earlier iCode versions, this one seems to use 'n' for
@@ -7127,6 +7302,7 @@ done:
             pop stack
         %end { of "Select Field" }
 
+        ! >> EVENT TRAP <<
         %routine EventTrap( %integer anevent, evfrom )
             ! events: Events to trap (then comma)
             ! evfrom: Label to skip to
@@ -7144,6 +7320,7 @@ done:
             dumprm(MOV, ESP, EBP, temp, 0); ! First thing we do is restore SP
         %end { of "Event Trap" }
 
+        ! >> DOUBLE OP <<
         %routine DoubleOp( %integer opr )
             %integer j,t
 
@@ -7160,6 +7337,7 @@ done:
             top_type = t
         %end { of "DoubleOp" }
 
+        ! >> SET DIAGNOSE <<
         %routine Set Diagnose(%integer Value)
 
             ! JDM JDM set value for the appropriate compiler pass
@@ -7168,6 +7346,7 @@ done:
 
         %end { of "Set Diagnose" }
 
+        ! >> SET CONTROL <<
         %routine Set Control(%integer Value)
 
             ! JDM JDM set value for the appropriate compiler pass
@@ -7175,6 +7354,7 @@ done:
             control = Value&x'3FFF' %if (Value&x'C000' = (PassId&3)<<14)
         %end { of "Set Control" }
 
+        ! >> FINISH PARAMS <<
         %predicate Finish Params
             %integer j
 
@@ -7219,6 +7399,7 @@ done:
             %false
         %end { of "Finish Params" }
 
+        ! >> START PARAMS <<
         %routine Start Params
 
             in params = -1
@@ -7230,19 +7411,20 @@ done:
             assemble(block type,labs,names);
         %end { of "Start Params" }
 
-        ! alt start
+        ! >> ALTERNATE START <<
         %routine AlternateStart
             decvar == procvar
             assemble(-2,labs,names)
         %end { of "AlternateStart" }
 
-        ! alt next
+        ! >> ALTERNATE NEXT <<
         %routine AlternateNext
             ! Compile the next alternate - update limit and set frame back to where we started
             max frame = frame %if (frame > max frame)
             frame = old frame
         %end { of "AlternateNext" }
 
+        ! >> ALTERNAT FORMAT <<
         %predicate AlternateFormat( %integer N )
 
             ! Check the ICODE for faults
@@ -7265,6 +7447,7 @@ done:
             %false
         %end { of "AlternateFormat" }
 
+        ! >> PLANT <<
         %routine  Plant
             ! Plant in-line code values (from "*=constant")
 
