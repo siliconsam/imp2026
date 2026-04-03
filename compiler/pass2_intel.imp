@@ -964,17 +964,6 @@
         ! JDM JDM retrieve the original variable name
         ! Beware case when (v_varno = 0) and (v_form = constant)
         spaces(1); print string("'")
-
-!!        print string(get symbol name(v_varno)) %unless (v_varno = 0) %and (v_form = constant)
-
-!!!        %if (v_varno = 0) %and (v_form = constant) %start
-!!!            print string(v_idname)
-!!!        %finish %else %if (v_varno = 0) %start
-!!!            print string(v_idname)
-!!!        %finish %else %start
-!!!            print string(get symbol name(v_varno))
-!!!        %finish
- 
         print string(v_idname)
 
         print string("'")
@@ -4173,24 +4162,6 @@ out1:
             top_format = 8
             top_idname = trim real(f to s( r, 16))
 
-!            %if (r = 0) %then %start
-!                push const(0)
-!            %else
-!                %if (lookaheadiCode # iCodeINIT) %then %start
-!                    !  anonymous %const
-!                    otype = con
-!!                    push const(0)
-!                    push const( getcotdouble(r) )
-!                    top_type = longrealtype
-!                    top_scope = COT
-!                    top_form = V in S
-!                    !  N.B. ** %fn + side-effect **
-!!                    top_disp = getcotdouble(r)
-!!                    top_extdisp = 0
-!!                    top_form = V in S
-!                %finish
-!            %finish
-
             rvalue = r
         %end { of "Input Real Value" }
 
@@ -6177,29 +6148,44 @@ roper(EXPx):
 
         !  >> COMPARE REALS <<
         %routine  compare reals(%record(stackfm)%name  l,r)
-            %integer compare flop inst
 
-            compare flop inst = FCOMPP
-            %if (compare mode = 1) %then compare flop inst = FCOMP
+            { TOS == Top On FPU Stack             }
+            { SOS == Second On FPU Stack          }
+
+            { Note l,r can be swopped for compare }
+            { We might need r for later use       }
+            { So make r == SOS and l == TOS       }
             loadreg(r, anyf)
             loadreg(l, anyf)
             hazard(EAX)
-!!            ! who's ended up on top?
-!!            ! l_base is the top of the FPU stack
-!!            %if (l_base > r_base) %start
-!!                dumpfloprr(compare flop inst, r_base, l_base)
-!!            %else
-!!                dumpfloprr(compare flop inst, l_base, r_base)
-!!                invert = invert !! 1
-!!            %finish
 
-            dumpfloprr(compare flop inst, l_base, r_base)
-!!            invert = invert !! 1
+            %if (compare mode = 1) %start
+                { Left hand side of a op b op c   }
+                { that is the a op b comparison   }
+                { for the FPU stack locations     }
+                { a (=l) is TOS and b (=r) is SOS }
+                { We need b (=r) for b op c test  }
+                { So just pop a held as TOS       }
+                { b is needed for b op c test     }
 
+                dumpfloprr(FCOMP, l_base, r_base)
+            %finish %else %start
+                { This is a simple comparison or  }
+                { right hand side of a op b op c  }
+                { that is the b op c comparison   }
+                { for the FPU stack locations     }
+                { b (=l) is TOS and c (=r) is SOS }
+                { b and c can now be thrown away  }
+                { In either scenario              }
+                { It's ok to pop both FPU values  }
 
-            ! puts status into EAX
+                dumpfloprr(FCOMPP, l_base, r_base)
+            %finish
+
+            { Now put result of compare status into EAX }
             dumpflopspec(FSTSW)
-            ! and move it to flags
+            { Now move comparison status to flags register  }
+            { for use by the conditional branch instruction }
             dumpsimple(SAHF)
             ! because FPU reports as if operands were unsigned
             compare unsign = 1
@@ -6777,24 +6763,19 @@ done:
             %finish
 
             %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
+            { tell the compare routine }
+            { This is the a op b comparison step }
+            { of an "a op b op c" comparison }
             compare mode = 1
+            { we can interchange lhs, rhs for a compare }
             swap(lhs,rhs)
             compare(lhs,rhs)
+            { We have swopped variables so invert the expected following test }
             invert = 1
+            { free up the old "LHS" }
             release(rhs_base)
             pop stack
             compare mode = 0
-!!            ! We happen to know that Compare loads the left parameter in a register.
-!!            ! We've already got RHS in a register, so we flip the LHS and RHS to the
-!!            ! comparison and set Invert accordingly
-!!            compare(rhs, lhs)
-!!            invert = 1
-!!            ! release LH and then overwrite it with RH
-!!            release(lhs_base)
-!!            id = lhs_stackid
-!!            lhs = rhs
-!!            lhs_stackid = id
-!!            pop stack
         %end { of "Compare Double" }
 
         ! >> COMPARE VALUES <<
