@@ -56,4 +56,4 @@ SECTIONS
     .rel.lines (READONLY): { *(.rel.imp.line.B) *(.rel.imp.line.D) }
 
 }
-INSERT AFTER .text;
+INSERT AFTER .rodata;

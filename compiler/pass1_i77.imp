@@ -537,7 +537,7 @@ fm(3):          printstring("too complex")
                 print ss
                 ->esac
 
-fm(4):          printstring("duplicate ".get ident(x))
+fm(4):          printstring("duplicate ".get ident(copy))
                 print ss
                 ->esac
 
