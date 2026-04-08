@@ -28,7 +28,19 @@ if [ ! -e ${IMP_INSTALL_HOME}/lib ]; then
 fi
 
 cd ${IMP_SOURCE_HOME}/pass3
+# Now to select an appropriate loader script for the gcc version
+gcc -dumpversion > gcc.version.lis
+READONLY=$(cat gcc.version.lis)
+if [ ${READONLY} -lt 11 ]; then
+    cp ld.i77.gcc10.script ld.i77.script
+else
+    cp ld.i77.gcc11.script ld.i77.script
+fi
+unset READONLY
+rm gcc.version.lis
+# Now build the pass3 programs and the loader script
 make bootstrap
+
 
 cd ${IMP_SOURCE_HOME}/lib
 make loadlinux
