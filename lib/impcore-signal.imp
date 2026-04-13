@@ -15,6 +15,7 @@
 %external %predicate    %spec initial entry found ( %integer address )
 %external %integer  %fn %spec handler entry address( %integer address )
 %external %integer      %spec rtl diagnose
+
 {-----------------------------------------------------------------------------}
 %external %routine impexit( %integer status )
     terminate io system
@@ -27,14 +28,17 @@
     %record(impframe) %name mybp,chainbp
     %integer panic
     %integer rtl diagnose = get env as integer( "IMP_RTL_DIAGNOSE" )
+    %owninteger signal count = 0
 
     ! JDM: This code will dump out the IMP trap tables
     ! Uncomment when debugging the run-time code
     ! Do NOT delete from this source code
-    dumpalltrapinfo %if (rtl diagnose&2 # 0)
+    dumpalltrapinfo %if (rtl diagnose&32 # 0) %and (signal count = 0)
     
     { Remember the event data and form the event message }
     save event( line, event, sub, info )
+
+    signal count = signal count + 1
 
     %if (event = 0) %start
         { We want to terminate program execution }
@@ -42,7 +46,7 @@
 
         %if (sub = 0) %start
             { %stop with exit status == n }
-            messageFormatA( 6 ) %if (rtl diagnose&2 # 0)
+            messageFormatA( 6 ) %if (rtl diagnose&64 # 0)
         %finish
 
         %if (sub > 0) %start
@@ -58,7 +62,7 @@
         { report the exit status }
         status = info
 
-    %finish %else %start
+    %finish %else %if (signal count < 12) %start
         ! try to find our own base pointer...
         ! We have to use embedded machine code
         ! to read the Frame Pointer/Base Pointer
@@ -142,7 +146,12 @@
         messageFormatA( 3 )
 
         status = 1
-
+    %finish %else %start
+        select output( 0 )
+        print string(" Signal Count=")
+        write(signal count,0)
+        newline
+        select output( old output stream )
     %finish
 
     impexit( status )

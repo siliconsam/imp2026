@@ -129,10 +129,10 @@
     print string( " |      " )
     print string( " | ".int2hex(addr(tp),8) )
     print string( " |                 " )
-    print string( " |  address = ".int2hex(address,8) )
+    print string( " |   address = ".int2hex(address,8) )
     print string( " | ".formeventpattern(on event) )
-    print string( " |         " )
-    print string( " |          |" )
+    print string( " |          " )
+    print string( " |           |" )
     newline
     select output( old output stream )
 
@@ -163,9 +163,9 @@
     print string( "    _imptraplimit  @(".int2hex(addr(traplimit),8).")" )
     newline
     newline
-    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
-    print string(" | Id    |  Trap    |    Routine       | Start    | End      |  Events          | EP       | From     |");newline
-    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
+    print string(" +-------+-----------+------------------+-----------+-----------+------------------+-----------+-----------+");newline
+    print string(" | Id    |  Trap     |    Routine       | Start     | End       |  Events          | EP        | EP Exit   |");newline
+    print string(" +-------+-----------+------------------+-----------+-----------+------------------+-----------+-----------+");newline
     select output( old output stream )
 
     ! We iterate over the table of trap blocks
@@ -179,7 +179,7 @@
     %repeat
 
     select output( 0 )
-    print string(" +-------+----------+------------------+----------+----------+------------------+----------+----------+");newline
+    print string(" +-------+-----------+------------------+-----------+-----------+------------------+-----------+-----------+");newline
     newline
     print string( "**** IMP TRAP DATA-STRUCTURE END ****" )
     newline
@@ -227,7 +227,8 @@
     %for tpaddress = limitTrapAddress,-trapsize,basetrapaddress %cycle
         tp == record( tpaddress )
 
-        %if ((tp_start <= address <= tp_end)) %start
+        ! The address must be in the range (tp_start..tp_end) and not in the trap handler range (tp_trapep..tpfrom)
+        %if (tp_start <= address <= tp_end) %and ((tp_trapep > address) %or (address > tp_from)) %start
             found == tp
             %exit
         %finish
@@ -268,7 +269,7 @@
     ! Non-zero result means eventbit is in trapbits
     %if ((eventbit & trapbits) = eventbit) %start
 
-        dumpsignalhandled( address, event, tp ) %if (rtl diagnose&1 # 0)
+        dumpsignalhandled( address, event, tp ) %if (rtl diagnose&64 # 0)
 
         %true
     %finish %else %false

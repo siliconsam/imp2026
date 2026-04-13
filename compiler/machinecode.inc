@@ -425,26 +425,6 @@
         %repeat
     %finish
 
-!    ! JDM JDM debug show the iCode instruction
-!    %if (diagnose&16 # 0) %start
-!        ListICode
-!        spaces(4)
-!        printstring( instruction )
-!
-!        %if (params count # 0) %start
-!            printsymbol( ' ' )
-!            ! now to show each parameter
-!            %for i = 1,1,params count %cycle
-!                %if (i > 1) %start
-!                    printsymbol( ',' )
-!                %finish
-!                printstring( params(i)_data )
-!            %repeat
-!        %finish
-!        newline
-!    %finish
-!    ! JDM JDM end debug
-
     ! JDM JDM debug show the instruction and decoded parameters
     %if (diagnose&8 # 0) %start
         spaces(4)

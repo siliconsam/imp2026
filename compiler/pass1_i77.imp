@@ -754,7 +754,6 @@ esac:
             %record(arfm)%name arp
             %switch act(actions:phrasal), paction(0:15)
 
-            { diagnostic trace routine (diagnose&1 # 0) }
             %routine trace analysis
                 %integer a
                 %owninteger la1=0, la2=0, lsa=0, lt=0

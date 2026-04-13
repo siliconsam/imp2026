@@ -294,7 +294,7 @@
         adr = addr(ptr)
         type = type of(ptr)
 
-%if (rtl diagnose&1 # 0) %start
+%if (rtl diagnose&128 # 0) %start
 select output( 0 )
 print string("READBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
 print string("READBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
@@ -662,7 +662,7 @@ select output( old output stream )
         adr = addr(ptr)
         type = type of(ptr)
 
-%if (rtl diagnose&1 # 0) %start
+%if (rtl diagnose&128 # 0) %start
 select output( 0 )
 print string("WRITEBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
 print string("WRITEBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
@@ -842,7 +842,7 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&1 # 0) %start
+%if (rtl diagnose&128 # 0) %start
 select output( 0 )
 print string("OPENOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
 newline
@@ -886,7 +886,7 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&1 # 0) %start
+%if (rtl diagnose&128 # 0) %start
 select output( 0 )
 print string("OPENBINARYOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
 newline

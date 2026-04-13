@@ -726,7 +726,7 @@
     %record(LabelFm)%array Labels(1:Max Labs)
 
     { most recent Jump tag translation - needed when planting event blocks }
-    %integer J Tag
+    %integer JTag
 
     { Status of registers }
     %ownintegerarray  activity(0:fr7) = 0,
@@ -1058,11 +1058,7 @@ at:
     %routine  monitor(%record(stackfm)%name  v, %string(15) text)
 
         show monitor( report, v, text )
-
-        %if (diagnose&16 # 0) %start
-            ! only dump monitor data into listing if we have requested iCode data
-            show monitor( listing, v, text )
-        %finish
+        show monitor( listing, v, text )
 
         select output(object out)
     %end { of "monitor" }
@@ -1077,13 +1073,10 @@ at:
         print symbol(':')
         newline
 
-        %if (diagnose&16 # 0) %start
-            ! only dump monitor data into listing if we have requested iCode data
-            select output(Listing)
-            print string(text)
-            print symbol(':')
-            newline
-        %finish
+        select output(Listing)
+        print string(text)
+        print symbol(':')
+        newline
 
         select output(object out)
     %end { of "float monitor" }
@@ -2365,7 +2358,7 @@ esac:
         { Now recalculate the next free FPU reg slot }
         fpu stack = fpustack + fpu stack delta( opn )
 
-        float monitor("FLOAT RM '".flopname(opn)."' New fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+        float monitor("FLOAT RM '".flopname(opn)."' New fpustack=".itos(fpu stack,0)) %if (diagnose&8 # 0)
 
         %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpfloprm")
         %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpfloprm")
@@ -2402,7 +2395,7 @@ esac:
         { Now recalculate the next free FPU reg slot }
         fpu stack = fpustack + fpu stack delta( opn )
 
-        float monitor("FLOAT RR '".flopname(opn)."' new fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+        float monitor("FLOAT RR '".flopname(opn)."' new fpustack=".itos(fpu stack,0)) %if (diagnose&8 # 0)
 
         %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpfloprr")
         %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpfloprr")
@@ -2427,29 +2420,53 @@ esac:
         { Now recalculate the next free FPU reg slot }
         fpu stack = fpustack + fpu stack delta( opn )
 
-        float monitor("FLOAT SPEC '".flopname(opn)."' fpustack=".itos(fpu stack,0)) %if (diagnose&16 # 0)
+        float monitor("FLOAT SPEC '".flopname(opn)."' fpustack=".itos(fpu stack,0)) %if (diagnose&8 # 0)
 
         %if (fpu stack < 0) %then abort("FPU Stack Underflow-dumpflopspec")
         %if (fpu stack > 7) %then abort("FPU Stack Overflow-dumpflopspec")
 
     %end { of "dump flopspec" }
 
-    %routine dumpjump( %integer opn, labelid )
+    %routine dump jump( %integer opn, labelid )
+
+        %constbyteintegerarray condop(JE:JBE) = 
+            16_84, 16_85, 16_8F, 16_8D, 16_8C, 16_8E, 16_87, 16_83, 16_82, 16_86
         ! Firstly we fake up some pseudo-code conventional assembler
         ! (with a zero jump offset) to feed into the listing pipe.
-        ! The genuine instruction code is generated after the listing
-        ! pseudo-code
+        ! The genuine instruction code is generated after the listing pseudo-code
         ! This is a case where the listing pipe and code pipes contain
         ! different sequences.
         ! Hence the use of putlistbyte and putcodebyte routines
         ! rather than putbyte
-        ! Start listing pseudo-code
-        putlistbyte(opvalue(opn))
-        putlistbyte(0)
 
-        %if (opn = CALL) %start
-            putlistbyte(0)
+        ! Start listing pseudo-code
+        ! We instead load the instruction pipe with an IBJ symbol directive
+        %if (opn = JMP) %start
+            { E9 == Jump Near with 32bit signed displacement }
+            putlistbyte( 16_E9 )
+            putlistlong( labelid )
+        %finish %else %if (opn = CALL) %start
+! JDM JDM replaced use of IF CALL command by IF REFLABEL command
+! old code retained Just-in-case
+!           ! Generated code using IF CALL ibj command
+!           putcodetag( labelid )
+!           writeifrecord(IF CALL)
+
+            ! JDM JDM Generated code using IF REFLABEL ibj command
+            ! plant the CALL code
+            ! call with relative address
+            putlistbyte( 16_E8 )
+
+            ! plant the relative address of the label
+            putlistlong( labelid )
+        %finish %else %start
+            ! not an unconditional JMP or a CALL
+            ! assume it is a conditional JMP (i.e. JE,JNE, etc.)
+            putlistbyte( 16_0F)
+            putlistbyte( condop(opn) )
+            putlistlong( labelid )
         %finish
+        ! End listing code
 
         listpreamble
         printstring(opname(opn))
@@ -2480,6 +2497,7 @@ esac:
         ! Now for the actual code to be added to the instruction pipe.
         ! We instead load the instruction pipe with an IBJ symbol directive
         %if (opn = JMP) %start
+            { IF_JUMP inserts the correct JMP instruction }
             putcodetag( labelid )
             writeifrecord(IF JUMP)
         %finish %else %if (opn = CALL) %start
@@ -2490,12 +2508,11 @@ esac:
 !           writeifrecord(IF CALL)
 
             ! JDM JDM Generated code using IF REFLABEL ibj command
-            ! plant the CALL code
-            ! call with relative address
+            ! plant the CALL instruction using relative address
             putcodebyte( 16_E8 )
             writeifrecord(IF OBJ)
 
-            ! plant the relative address of the label
+            ! Now plant the relative address of the label
             putcodetag( labelid )
 
             ! JDM JDM set offset to zero
@@ -3429,11 +3446,11 @@ esac:
             n = n-1
             -> sw(v_form)
 sw(a in rec):
-            abort("Mod: a in rec")
+            abort("Mod: a in rec ".v_idname)
 sw(av in rec):
-            abort("Mod: av in rec")
+            abort("Mod: av in rec ".v_idname)
 sw(v in rec):
-            abort("Mod: v in rec")
+            abort("Mod: v in rec ".v_idname)
 sw(constant):
             abort("Mod: constant")
 sw(v in s):
@@ -3679,7 +3696,6 @@ out1:
         %longreal    temp longreal
         %integer     temp integer
         %integer     temp count
-        %integer     temp evfrom
        
         %routinespec   compile to string(%record(stackfm)%name v)
         ! JDM JDM change name from load()
@@ -4177,7 +4193,7 @@ out1:
         ! maintain an indirect database to map Pass 1 label numbers
         ! into unique tags
 
-        !                                                      >> NEW TAG <<
+        ! >> NEW TAG <<
         ! Get the next consecutive Pass 3 label ID
         %integerfn  new tag
             %owninteger free tag = 999
@@ -4186,7 +4202,7 @@ out1:
             %result = free tag
         %end { of "new tag" }
 
-        !                                                      >> NEW LABEL <<
+        ! >> NEW LABEL <<
         ! Get the next available label database index
         %integerfn  New Label
             labs = labs+1
@@ -4194,7 +4210,7 @@ out1:
             %result = labs
         %end { of "New Label" }
 
-        !                                                        >> FIND LABEL<<
+        ! >> FIND LABEL<<
         ! return the index in our label table of the Pass 1 label
         %integerfn  Find Label(%integer  label)
             %integer  lp
@@ -4207,7 +4223,7 @@ out1:
             %result = 0
         %end { of "Find Label" }
 
-        !                                                     >> DEFINE LABEL <<
+        ! >> DEFINE LABEL <<
         ! This label is "here"
         %routine  Define Label(%integer  label)
             %integer lp
@@ -4231,7 +4247,7 @@ out1:
             uncond jump = 0
         %end { of "define label" }
 
-        !                                                          >> JUMP TO <<
+        ! >> JUMP TO <<
         ! A wrapper for conditional jumps to labels that we're going
         ! to map into tags
         %routine  Jump To(%integer  label, op, flag)
@@ -4249,7 +4265,7 @@ out1:
                 %if (flag # 0) %and (l_tag&16_8000 # 0) %then l_tag = new tag
             %finish
 
-            ! As a side effect, we also set the global J Tag, which is used
+            ! As a side effect, we also set the global JTag, which is used
             ! in planting Event block information (a bit hacky, but a PSR feature)
             JTag = l_tag & 16_7FFF
 
@@ -4258,6 +4274,7 @@ out1:
             %if (op = JMP) %then uncond jump = nextcad
         %end { of "jump to" }
 
+        ! >> JUMP FORWARD <<
         %routine Jump Forward( %integer val, test )
             %integer opr
 
@@ -4292,7 +4309,7 @@ out1:
         !-------------------------------------------------------
         ! Stack variable transformations
         !-------------------------------------------------------
-        !                                           >> REDUCE <<
+        ! >> REDUCE <<
         ! Convert a variable which is addressed in a Rec into a simple variable
         ! by loading the indirect value into a register and changing the form
         %routine  reduce(%record(stackfm)%name  v)
@@ -4327,7 +4344,7 @@ out1:
             v_scope = scope
         %end { of "reduce" }
 
-        !                                              >> AMAP <<
+        ! >> AMAP <<
         ! convert V into a descriptor for the address of V
         %routine  amap(%record(stackfm)%name  v)
             %integer f
@@ -4360,7 +4377,7 @@ out1:
             v_form = f
         %end { of "amap" }
 
-        !                                              >> VMAP <<
+        ! >> VMAP <<
         ! The inverse of AMAP:  i.e. vmap(amap(x)) => x
         %routine  vmap(%record(stackfm)%name  v)
             %integer  f, t
@@ -4380,7 +4397,7 @@ out1:
             abort("VMap") %if (f < 0)
         %end { of "v map" }
 
-        !                                              >> ADDRESS <<
+        ! >> ADDRESS <<
         ! convert V into a form in which it is directly addressable
         ! that means either V in R, V in S or Constant
         %routine  address(%record(stackfm)%name  v)
@@ -4426,7 +4443,7 @@ out1:
             %finish
         %end { of "address" }
 
-        !                                              >> LOAD REG <<
+        ! >> LOAD REG <<
         ! Load variable V into register R
         ! Along the way any register the variable owned is released, and
         ! the new register is claimed.
@@ -4708,7 +4725,7 @@ f(A V in S):
             %return
         %end { of "Load Reg" }
 
-        !                                              >> OPERATION <<
+        ! >> OPERATION <<
         ! perform the operation OP on the top two elements of the stack.
         !   (single element for unary operators)
         %routine  Operation(%integer op)
@@ -5465,6 +5482,7 @@ roper(EXPx):
         ! Store the item in RHS to LHS.  Encapsulates the difficulties
         ! of variable length items and pushing things on the stack to
         ! keep the rest of "Assign" looking tidy
+        ! >> STORE <<
         %routine Store( %record(stackfm)%name lhs, rhs)
             %integer pt
 
@@ -5703,7 +5721,7 @@ roper(EXPx):
             esac:
         %end { of "store" }
 
-        !                                                          >> ASSIGN <<
+        ! >> ASSIGN <<
         ! ASSOP =   -1:  parameter assignment
         !            0:  == assignment
         !            1:  =  assignment
@@ -6001,7 +6019,7 @@ roper(EXPx):
 !            %finish
         %end { of "assign" }
 
-        !                                                      >> ARRAY REF <<
+        ! >> ARRAY REF <<
         ! Array references always use the PERM
         ! unless they are 1 dimensional,
         ! AND the %control bit has been turned off
@@ -6128,7 +6146,7 @@ roper(EXPx):
 
         %end { of "array ref" }
 
-        !                                              >> TEST ZERO <<
+        ! >> TEST ZERO <<
         ! test a real/integer/byte variable against zero
         %routine  test zero(%record(stackfm)%name  v)
 
@@ -6140,13 +6158,14 @@ roper(EXPx):
             %finish
         %end { of "test zero" }
 
+        ! >> COMPARE RECORDS <<
         %routine Compare Records(%record(stackfm)%name L, R, %integer N)
             ! JDM JDM eventually compare the byte values of each record
             ! in the interim, barf
             abort("Compare Records")
         %end { of "Compare records" }
 
-        !  >> COMPARE REALS <<
+        ! >> COMPARE REALS <<
         %routine  compare reals(%record(stackfm)%name  l,r)
 
             { TOS == Top On FPU Stack             }
@@ -6191,7 +6210,7 @@ roper(EXPx):
             compare unsign = 1
         %end { of "Compare Reals" }
 
-        !  >> COMPARE STRINGS <<
+        ! >> COMPARE STRINGS <<
         %routine  compare strings(%record(stackfm)%name  l,r)
             %record(stackfm)%name  temp
             %if (l_base = COT) %and (l_disp = null string) %start
@@ -6213,7 +6232,7 @@ roper(EXPx):
             %finish
         %end { of "compare strings" }
 
-        !  >> COMPARE <<
+        ! >> COMPARE <<
         %routine  compare(%record(stackfm)%name  l,r)
             %if (l_type = generaltype) %or (l_type = stringtype) %start
                 compare strings(l,r)
@@ -6245,7 +6264,7 @@ roper(EXPx):
             dumprv(CMP, l_base, r)
         %end { of "compare" }
 
-        !  >> RESOLVE <<
+        ! >> RESOLVE <<
         %routine  resolve( %integer  flag )
 
             !S -> A.(B).C
@@ -6269,7 +6288,7 @@ roper(EXPx):
             %if (flag&4 # 0) %then dumpri(CMP, EAX, 0)
         %end { of "resolve" }
 
-        !  >> DUMP ENTER <<
+        ! >> DUMP ENTER <<
         %integerfn enter
             %integer cad;
 
@@ -6285,7 +6304,7 @@ roper(EXPx):
             %result = cad;
         %end { of "enter" }
 
-        !  >> DUMP RETURN <<
+        ! >> DUMP RETURN <<
         %routine  dump return
             %return %if (uncond jump = next cad);          !  can't get here ?
 
@@ -6382,7 +6401,7 @@ roper(EXPx):
 
                 ! JDM JDM show start of macro "call" in listing
                 ! Now to say which macro was requested 
-                 %if (diagnose&16 # 0) %start
+                 %if (diagnose&8 # 0) %start
                         select output(Listing)
                         spaces(38)
                         printstring( "Generating CODE for '" )
@@ -6481,15 +6500,15 @@ b(14):          { SHORT }
                 -> esac
 
 esac:
-!                ! JDM JDM show macro "call" in listing
-!                ! Now to say which macro was requested
-!                %if (diagnose&16 #0) %start
-!                    spaces(38)
-!                    printstring( "CALL '" )
-!                    printstring( macroname(t) )
-!                    printstring( "' (MACRO "); write(t,0); printstring(")")
-!                    newline
-!                %finish
+                ! JDM JDM show macro "call" in listing
+                ! Now to say which macro was requested
+                %if (diagnose&8 #0) %start
+                    spaces(38)
+                    printstring( "CALL '" )
+                    printstring( macroname(t) )
+                    printstring( "' (MACRO "); write(t,0); printstring(")")
+                    newline
+                %finish
 
             %finish %else %start
                 !   -- normal routine calls --
@@ -6497,7 +6516,7 @@ esac:
                 ! to the result area
                 ! JDM JDM attempt to obtain return value of %record %function
                 ! temporary debug call to show(v) to determine function %result
-!                %if (diagnose&16 # 0) %then show(v)
+!                %if (diagnose&1 # 0) %then show(v)
 
                 ! JDM JDM
                 ! %record / %string functions have a "hidden" parameter
@@ -6758,7 +6777,7 @@ done:
             LHS == stack(stp-1)
             RHS == top
 
-            %if (diagnose&4 # 0) %start     
+            %if (diagnose&1 # 0) %start     
                 show stack( Listing )
             %finish
 
@@ -6871,7 +6890,7 @@ done:
 
             sw(map):
                 ! JDM JDM added for temporary debug
-                %if (diagnose&4 # 0) %start
+                %if (diagnose&1 # 0) %start
                     monitor(top, "RESULT MAP")
                 %finish
 
@@ -6886,7 +6905,7 @@ done:
                     %label esacst
 
                     ! JDM JDM added for temporary debug
-                    %if (diagnose&4 # 0) %start
+                    %if (diagnose&1 # 0) %start
                         monitor(top, "RESULT FN")
                     %finish
 
@@ -7284,7 +7303,7 @@ done:
         %end { of "Select Field" }
 
         ! >> EVENT TRAP <<
-        %routine EventTrap( %integer anevent, evfrom )
+        %routine EventTrap( %integer anevent, pevfrom )
             ! events: Events to trap (then comma)
             ! evfrom: Label to skip to
             %integer temp
@@ -7292,10 +7311,10 @@ done:
             events = anevent
             temp = getwork(cWordSize);      ! get a temp location for SP
             dumpmr32(MOV, EBP, temp, 0, ESP); ! because our signaller doesn't restore it
-            jump to(evfrom, JMP, 1);        ! go there now
+            jump to(pevfrom, JMP, 1);        ! go there now
             ! We need to make EVFROM into a label ID that pass 3 will recognise
             ! to build the trap table, so Jump To sets a variable we pick up here...
-            evfrom = J Tag
+            evfrom = JTag
             evep = new tag;                 ! tag for the event body entry point
             dump label(evep);               ! which is here
             dumprm(MOV, ESP, EBP, temp, 0); ! First thing we do is restore SP
@@ -8373,19 +8392,19 @@ c(iCodeSELECT):
 c(iCodeON):
             ! %on %event block
             temp tag = ReadTagComma
-            temp evfrom = ReadTag
+            evfrom = ReadTag
 
             %if (dumpIcode # 0) %start
                 ListICode
                 spaces(4)
                 write( temp tag,0)
                 printsymbol( ',' )
-                write( temp evfrom,0)
+                write( evfrom,0)
 
                 newline
             %finish
 
-            EventTrap( temp tag, temp evfrom )
+            EventTrap( temp tag, evfrom )
             %continue
 
 c(iCodeASSPAR):
@@ -8665,7 +8684,7 @@ c( * ):
     flush data
     flush switch
 
-    %if (diagnose&4 # 0) %start
+    %if (diagnose&1 # 0) %start
         select output( 0 )
         newline
         print string(" Maximum depth of symbol stack = ".itos(get max tag,0))

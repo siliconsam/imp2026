@@ -2835,8 +2835,8 @@ int main(int argc, char **argv)
 
     initlabels();
 
-    while (improvejumpsizes())
-        initlabels();
+//    while (improvejumpsizes())
+//        initlabels();
     computesizes();
 
     remapspecs();
