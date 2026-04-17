@@ -1,6 +1,6 @@
 
     { I/O Stream identifiers }
-    %include "Stream3L.inc"
+    %include "IMP:Stream3L.inc"
 
     %constinteger   Max Buff = 4096+256,
                     Buffer Safe Limit = Max Buff-256-32-512

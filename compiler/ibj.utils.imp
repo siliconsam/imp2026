@@ -1,6 +1,6 @@
 
     %include "ibj.types.inc"
-    %include "Stream3L.inc"
+    %include "IMP:Stream3L.inc"
 
     ! Simple buffered output of code bytes...
 	%const %integer objbufmax = 512

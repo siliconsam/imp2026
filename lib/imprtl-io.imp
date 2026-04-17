@@ -40,7 +40,7 @@
     %external %routine       %spec put char( %integer handle,ch )
     %external %routine       %spec flush( %integer handle )
 
-    %external %integer       %spec rtl diagnose
+    %external %integer       %spec rtl diagnose %alias "_imp_rtlflags"
 
     %predicate ok read type( %integer type )
         %true %if (type = integer type)

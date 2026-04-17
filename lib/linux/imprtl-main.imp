@@ -24,7 +24,8 @@
     %external %integer %function %spec get max output stream
     %external %routine           %spec initialise io system
     %external %routine           %spec terminate io system
-    %external %integer                 rtl diagnose
+    ! remember the level of diagnostics for run-time
+    %external %integer           %spec rtl diagnose %alias "_imp_rtlflags"
 
     %routine %spec parse file list ( %string(255) file list, %integer io mode )
     %routine %spec usage

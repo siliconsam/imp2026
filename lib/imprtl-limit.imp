@@ -1,5 +1,8 @@
 {------------------------------------------------------------------------------}
 %external %integer traplimit %alias "traplimit"
 %external %integer linelimit %alias "linelimit"
+
+! remember the level of diagnostics for run-time
+%external %integer  rtl diagnose %alias "_imp_rtlflags"
 {------------------------------------------------------------------------------}
 %endoffile

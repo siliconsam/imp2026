@@ -16,7 +16,8 @@
 
 %external %record(imptrap)   %spec trapbase %alias "_imptrapbase"
 %external %record(imptrap)   %spec traplimit  %alias "_imptraplimit"
-%external %integer           %spec rtl diagnose
+%external %integer           %spec rtl diagnose %alias "_imp_rtlflags"
+
 ! Remember the address of the first trap (i.e. address of "_imptrapbase")
 %own %integer baseTrapAddress = 0
 

@@ -2547,7 +2547,7 @@ esac:
 
         writeifrecord(IF OBJ)
 
-        putlistword( labelid )
+        putlistlong( labelid )
         putcodeword( labelid )
         putcodeword( 0 )        { unused 16-bit offset to the label }
 
@@ -6401,13 +6401,13 @@ roper(EXPx):
 
                 ! JDM JDM show start of macro "call" in listing
                 ! Now to say which macro was requested 
-                 %if (diagnose&8 # 0) %start
-                        select output(Listing)
-                        spaces(38)
-                        printstring( "Generating CODE for '" )
-                        printstring( macroname(t) )
-                        printstring( "' (MACRO "); write(t,0); printstring(")")
-                        newline
+                %if (diagnose&8 # 0) %start
+                    select output(Listing)
+                    spaces(38)
+                    printstring( "Generating CODE for '" )
+                    printstring( macroname(t) )
+                    printstring( "' (MACRO "); write(t,0); printstring(")")
+                    newline
                 %finish
 
                 -> b(t)
