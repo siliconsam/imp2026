@@ -214,6 +214,7 @@
     %owninteger order        = 0          { out of sequence flag }
     %owninteger for warn     = 0          { non-local flag }
     %owninteger dubious      = 0          { flag for dubious statements }
+    %owninteger possiblename = 0          { flag for not declared ident }
     %owninteger dp           = 1
     %owninteger pos1         = 0
     %owninteger pos2         = 0          { error position }
@@ -531,6 +532,11 @@ fm(1):          printstring("atom")
 
 fm(2):          printstring("not declared")
                 print ss
+                newline
+                printstring(" Error ident=")
+                printsymbol('"')
+                printstring(form dict string(possiblename))
+                printsymbol('"')
                 ->esac
 
 fm(3):          printstring("too complex")
@@ -933,6 +939,7 @@ s4:             symtype = quote
 
                     { first locate the text of the name }
                     new = dmax+1  { points to text of string in dictionary }
+                    possiblename = new
                     k1 = hash value & max names     { rather crude hash }
 
                     %cycle
@@ -2130,6 +2137,11 @@ gn:             %if (next = 0) %start                       { end of phrase }
             { define a constant bound pair from the last stacked constants }
             %routine set bp
                 pending = pending-2
+
+!select output(0)
+!printstring("In set bp: pending=");write(pending,-1); newline
+!select output( old output stream )
+
                 lb = pstack(pending+1)
                 ub = pstack(pending+2)
                 %if (ub-lb+1 < 0) %start
@@ -2141,7 +2153,7 @@ gn:             %if (next = 0) %start                       { end of phrase }
                 set const(lb)
                 set const(ub)
                 add char(iCodeBOUNDS) %unless (class = 146) { JDM 146 == RCRB?? }
-            %end { of "setbp" }
+            %end { of "set bp" }
 
             { type = 0:eof, 1:eop, 2:end }
             %routine compile end(%integer type)

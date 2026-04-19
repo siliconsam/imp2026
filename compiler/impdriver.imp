@@ -10,8 +10,8 @@
     %string(255) imp source, imp prefix, imp extension
     %string(255) def file, imp file, icd file, ibj file, list file, code file
 
-    %include "Stream3L.inc"
-    %include "Option3L.inc"
+    %include "IMP:Stream3L.inc"
+    %include "IMP:Option3L.inc"
 
     %predicate run pass( %string(255) mode, pass )
         %string(255) I,J
