@@ -7,7 +7,7 @@
     { currently bases 2..16 are supported.                                   }
     { To allow higher bases:                                                 }
     { Extend basechar to include the additional chars                        }
-    { 2) update the validate base routine to extend
+    { 2) update the validate base routine to extend                          }
     {------------------------------------------------------------------------}
     %own %string(16) basechar = "0123456789ABCDEF"
 

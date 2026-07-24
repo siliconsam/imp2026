@@ -965,7 +965,6 @@
         ! Beware case when (v_varno = 0) and (v_form = constant)
         spaces(1); print string("'")
         print string(v_idname)
-
         print string("'")
         newline
     %end { of "show" }
@@ -1055,9 +1054,9 @@ at:
     { ---------------------------------------------------------------- }
     { >> MONITOR <<                                                    }
     { ---------------------------------------------------------------- }
-    %routine  monitor(%record(stackfm)%name  v, %string(15) text)
+    %routine monitor(%record(stackfm)%name  v, %string(15) text)
 
-        show monitor( report, v, text )
+!        show monitor( report, v, text )
         show monitor( listing, v, text )
 
         select output(object out)
@@ -4346,7 +4345,7 @@ out1:
 
         ! >> AMAP <<
         ! convert V into a descriptor for the address of V
-        %routine  amap(%record(stackfm)%name  v)
+        %routine amap(%record(stackfm)%name  v)
             %integer f
             %constintegerarray  addr map(0:15) =
             {    0,        1,  2,  3,       4,   5,               6,                   7, }
@@ -4454,6 +4453,7 @@ out1:
             monitor(v, "LOAD") %if (diagnose&2 # 0)
 
             %if (r = anyf) %start
+
                 ! Equivalents for real numbers...
                 ! because there's very little clever we can do, we first simplify somewhat...
                 Address(v)
@@ -5726,7 +5726,7 @@ roper(EXPx):
         !            0:  == assignment
         !            1:  =  assignment
         !            2:  <- assignment
-        %routine  assign(%integer  assop )
+        %routine assign(%integer  assop )
             %record(stackfm)%name  lh,rh
             %record(stackfm)  temp
             %integer  n
@@ -6955,8 +6955,29 @@ done:
                         -> esacst
 
                     st(stringtype):
-                    st(recordtype):
                         ! string - pass back through the hidden parameter
+                        push copy(top);            ! Make a copy of the thing on top
+                        lhs == stack(stp-1);       ! point to the (now spare) next item
+                        lhs_type = procvar_type;   ! and make it look like a destination
+                        lhs_size = procvar_size
+                        lhs_format = procvar_format
+                        lhs_base = EBP
+                        lhs_disp = 2 * cWordSize;  ! At the offset of the last parameter
+                        lhs_extdisp = 2 * cWordSize;  ! At the offset of the last parameter
+                        lhs_form = A in S
+                        lhs_aform = A in S
+                        lhs_scope = 0
+
+                        %if (diagnose&4 # 0) %start
+                            monitor(lhs, "RES LH")
+                            monitor(top, "RES RH")
+                        %finish
+
+                        assign(1)
+                        -> esacst
+
+                    st(recordtype):
+                        ! record - pass back through the hidden parameter
                         push copy(top);            ! Make a copy of the thing on top
                         lhs == stack(stp-1);       ! point to the (now spare) next item
                         lhs_type = procvar_type;   ! and make it look like a destination
@@ -7255,9 +7276,9 @@ done:
         %end { of "Internal Handler" }
 
         ! >> MONITOR <<
-        %routine Monitor
+        %routine Machine Monitor
             Internal Handler ( -1 )
-        %end { of "Monitor" }
+        %end { of "Machine Monitor" }
 
         ! >> SELECT FIELD <<
         %routine SelectField( %integer field index )
@@ -8370,7 +8391,7 @@ c(iCodeMONITOR):
                 newline
             %finish
 
-            Monitor
+            Machine Monitor
             %continue
 
 c(iCodeSELECT):

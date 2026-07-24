@@ -61,7 +61,7 @@
 
 ! Wee change needed to cross-compile the compiler when 
 ! going from 16 bit to 32 bit world
-!    %constinteger minus one    = 16_7fff;
+!    %constinteger minus one    = 16_ffff;
     { configuration parameters                              }
     { minus one represents all bits set for an %integer     }
     { %integer could be 16,32,64 bits wide depending on the }
