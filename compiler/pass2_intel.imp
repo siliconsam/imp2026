@@ -1081,6 +1081,41 @@ at:
     %end { of "float monitor" }
 
     { ---------------------------------------------------------------- }
+    { >> ICODE CHECK <<                                                }
+    { ---------------------------------------------------------------- }
+    %routine icode check(%string(255) icode, %integer params)
+
+        %routine report iCode fault( %integer stream id )
+
+            select output( stream id )
+
+            ! Indicate this is really a PASS1 problem
+            printstring("Error in PASS1 icode generation, detected by PASS2" )
+            newline
+
+            printstring("iCode ".iCode." needs ")
+            write(params,0)
+            printstring(" parameter" )
+            printstring( "s" ) %if (params > 1)
+            newline
+        %end
+
+        ! check that the icode instruction has correct count of params
+        %if (stp < params) %start
+
+            report iCode fault( report )
+            report iCode fault( listing )
+
+            ! restore the output stream
+            select output(object out)
+
+            ! icode parameter mismatch is immediately fatal
+            %signal 0,-1,-1
+
+        %finish
+    %end { of "iCodeCheck" }
+
+    { ---------------------------------------------------------------- }
     { >> GET GP TAG <<                                                 }
     { ---------------------------------------------------------------- }
     %integerfn get gp tag
@@ -6968,11 +7003,6 @@ done:
                         lhs_aform = A in S
                         lhs_scope = 0
 
-                        %if (diagnose&4 # 0) %start
-                            monitor(lhs, "RES LH")
-                            monitor(top, "RES RH")
-                        %finish
-
                         assign(1)
                         -> esacst
 
@@ -6985,7 +7015,11 @@ done:
                         lhs_format = procvar_format
                         lhs_base = EBP
                         lhs_disp = 2 * cWordSize;  ! At the offset of the last parameter
+                        lhs_extdisp = 2 * cWordSize;  ! At the offset of the last parameter
                         lhs_form = A in S
+                        lhs_aform = A in S
+                        lhs_scope = 0
+
                         assign(1)
                         -> esacst
 
@@ -7574,7 +7608,9 @@ c(iCodeOR):
 
                 newline
             %finish
-            
+
+            icode check("OR",2)
+
             Operation( ORx )
             %continue
 
@@ -7584,6 +7620,8 @@ c(iCodeCOMPARED):
 
                 newline
             %finish
+
+            icodecheck("COMPARED",2)
 
             Compare Double
             %continue
@@ -7653,6 +7691,8 @@ c(iCodeXOR):
                 newline
             %finish
 
+            icode check("XOR",2)
+
             Operation( XORx )
             %continue
 
@@ -7662,6 +7702,8 @@ c(iCodeAND):
 
                 newline
             %finish
+
+            icode check("AND",2)
 
             Operation( ANDx )
             %continue
@@ -7720,6 +7762,8 @@ c(iCodeMUL):
                 newline
             %finish
 
+            icode check("MUL",2)
+
             Operation( MULx )
             %continue
 
@@ -7729,6 +7773,8 @@ c(iCodeADD):
 
                 newline
             %finish
+
+            icode check("ADD",2)
 
             Operation( ADDx )
             %continue
@@ -7740,6 +7786,8 @@ c(iCodeSUB):
                 newline
             %finish
 
+            icode check("SUB",2)
+
             Operation( SUBx )
             %continue
 
@@ -7750,6 +7798,8 @@ c(iCodeCONCAT):
                 newline
             %finish
 
+            icode check("CONCAT",2)
+
             Operation( CONCx )
             %continue
 
@@ -7759,6 +7809,8 @@ c(iCodeQUOT):
 
                 newline
             %finish
+
+            icode check("QUOT",2)
 
             Operation( DIVx )
             %continue
@@ -7841,6 +7893,8 @@ c(iCodeCOMPARE):
                 newline
             %finish
 
+            icode check("COMPARE",2)
+
             Compare Values
             %continue
 
@@ -7873,6 +7927,8 @@ c(iCodeINIT):
                 newline
             %finish
 
+!            icode check("INIT",1)
+
             Init( temp tag )
             %continue
 
@@ -7900,6 +7956,8 @@ c(iCodeCOMPAREA):
                 newline
             %finish
 
+            icode check("COMPAREA",2)
+
             Compare Addresses
             %continue
 
@@ -7924,6 +7982,8 @@ c(iCodeCALL):
 
                 newline
             %finish
+
+            iCode check("CALL",1)
 
             Compile Call( top )
             %continue
@@ -8021,6 +8081,8 @@ c(iCodeMAP):
                 newline
             %finish
 
+            icode check("MAP",1)
+
             Return( Map )
             %continue
 
@@ -8072,6 +8134,8 @@ c(iCodeDIVIDE):
                 newline
             %finish
 
+            icode check("DIVIDE",2)
+
             Operation( RDIVx )
             %continue
 
@@ -8094,6 +8158,8 @@ c(iCodeASSVAL):
                 newline
             %finish
 
+            icode check("ASSVAL",2)
+
             Assign( 1 )
             %continue
 
@@ -8115,6 +8181,8 @@ c(iCodeNEGATE):
                 newline
             %finish
 
+            icode check("NEGATE",1)
+
             Operation( NEGx )
             %continue
 
@@ -8125,6 +8193,8 @@ c(iCodeRESULT):
 
                 newline
             %finish
+
+            icode check("RESULT",1)
 
             Return( Fn )
             %continue
@@ -8143,6 +8213,8 @@ c(iCodeSJUMP):
                 newline
             %finish
 
+            icode check("SJUMP",1)
+
             Switch Jump( temp tag )
             %continue
 
@@ -8152,6 +8224,8 @@ c(iCodeIEXP):
 
                 newline
             %finish
+
+            icode check("IEXP",2)
 
             Operation( EXPx )
             %continue
@@ -8164,6 +8238,8 @@ c(iCodeASSREF):
                 newline
             %finish
 
+            icode check("ASSREF",2)
+
             Assign( 0 )
             %continue
 
@@ -8173,6 +8249,8 @@ c(iCodeLSH):
 
                 newline
             %finish
+
+            icode check("LSH",2)
 
             Operation( LSHx )
             %continue
@@ -8184,6 +8262,8 @@ c(iCodeNOT):
                 newline
             %finish
 
+            icode check("NOT",1)
+
             Operation( NOTx )
             %continue
 
@@ -8193,6 +8273,8 @@ c(iCodeRSH):
 
                 newline
             %finish
+
+            icode check("RSH",2)
 
             Operation( RSHx )
             %continue
@@ -8212,6 +8294,8 @@ c(iCodeSETFORMAT):
                 newline
             %finish
 
+            icode check("SETFORMAT",1)
+
             Set Record Format( temp tag )
             %continue
 
@@ -8229,6 +8313,8 @@ c(iCodeSLABEL):
                 newline
             %finish
 
+            icode check("SLABEL",1)
+
             Switch Label( temp tag )
             %continue
 
@@ -8238,6 +8324,8 @@ c(iCodeACCESS):
 
                 newline
             %finish
+
+            icode check("ACCESS",2)
 
             Array Ref( 0 )
             %continue
@@ -8249,6 +8337,8 @@ c(iCodeBOUNDS):
 
                 newline
             %finish
+
+            icode check("BOUNDS",2)
 
             Constant Bounds
             %continue
@@ -8279,6 +8369,8 @@ c(iCodeDIM):
                 newline
             %finish
 
+!            icode check("DIM",tempcount)
+
             Dimension( temp tag, temp count )
             %continue
 
@@ -8294,6 +8386,8 @@ c(iCodeEVENT):
                 newline
             %finish
 
+!            icode check("EVENT",2)
+
             Internal Handler ( temp tag )
             %continue
 
@@ -8307,6 +8401,8 @@ c(iCodeFOR):
 
                 newline
             %finish
+
+            icode check("FOR",4)
 
             Compile For( temp tag )
             %continue
@@ -8338,6 +8434,8 @@ c(iCodeINDEX):
                 newline
             %finish
 
+            icode check("INDEX",2)
+
             Array Ref( 1 )
             %continue
 
@@ -8348,6 +8446,8 @@ c(iCodeJAM):
 
                 newline
             %finish
+
+            icode check("JAM",2)
 
             Assign( 2 )
             %continue
@@ -8407,6 +8507,8 @@ c(iCodeSELECT):
                 newline
             %finish
 
+            icode check("SELECT",1)
+
             SelectField( temp tag )
             %continue
 
@@ -8436,6 +8538,8 @@ c(iCodeASSPAR):
                 newline
             %finish
 
+            icode check("ASSPAR",2)
+
             Assign( -1 )
             %continue
 
@@ -8446,6 +8550,8 @@ c(iCodeSUBA):
 
                 newline
             %finish
+
+            icode check("SUBA",2)
 
             DoubleOp( SUBx )
             %continue
@@ -8499,6 +8605,8 @@ c(iCodeADDA):
                 newline
             %finish
 
+            icode check("ADDA",2)
+
             DoubleOp( ADDx )
             %continue
 
@@ -8508,6 +8616,8 @@ c(iCodeMOD):
 
                 newline
             %finish
+
+            icode check("MOD",2)
 
             Operation( ABSx )
             %continue
@@ -8535,6 +8645,8 @@ c(iCodeREXP):
 
                 newline
             %finish
+
+            icode check("REXP",2)
 
             Operation( REXPx )
             %continue
