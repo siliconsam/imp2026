@@ -451,7 +451,7 @@
 
         %for i = 1, 1, l %cycle
             printsymbol(charno(s, i))
-                    %repeat
+        %repeat
     %end { of "printstring" }
 
     {------------------------------------------------------------------------}

@@ -1109,6 +1109,7 @@ at:
             ! restore the output stream
             select output(object out)
 
+            No Faults = No faults + 1
             ! icode parameter mismatch is immediately fatal
             %signal 0,-1,-1
 
@@ -8617,7 +8618,7 @@ c(iCodeMOD):
                 newline
             %finish
 
-            icode check("MOD",2)
+            icode check("MOD",1)
 
             Operation( ABSx )
             %continue

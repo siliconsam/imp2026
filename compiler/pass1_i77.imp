@@ -2360,7 +2360,8 @@ top:        %if (next # link) %start
             %finish
             %return
 
-atop:       access = 0
+{atop:}
+            access = 0
             ->top
 
             { declarators }
@@ -2533,7 +2534,8 @@ c(62):      { CWORD }
 c(72):      { REPEAT }
             pop label(0)
             def lab(label+1) %if (lmode&32 # 0)
-            ->atop
+            access = 0
+            ->top
 
 c(69):      { FINISH }
             pop label(1)
@@ -2584,7 +2586,8 @@ c(64):      { ON event }
 c(104):     { L [label] }
             add operation(iCodeJUMP, tag(x)_index)
             inhibit = 1
-            ->atop
+            access = 0
+            ->top
 
 c(149):     { LAB }
             stats = stats-1
@@ -2605,7 +2608,8 @@ c(63):      { EXIT }
             labxx = labxx+1 %if (x = 32)    { continue }
             add operation(iCodeGOTO, labxx)
             dict(j) = dict(j)!x             { show given }
-            ->atop
+            access = 0
+            ->top
 
 c(50):      { ACOMP }
             add char( iCodeCOMPAREA )
@@ -2649,7 +2653,8 @@ c(65):      { SIGNAL }
             pop lit
             add operation(iCodeEVENT, lit)
             fault(10) %unless (0 <= lit <= 15)
-            ->atop
+            access = 0
+            ->top
 
 c(51):      { EQ }
             add char( iCodeASSVAL )
@@ -2975,7 +2980,8 @@ inst:       pop def %if (pending # 0)     { OWNT (x=0) }
 c(swit):    { S [switch] ==105 }
             add operation(iCodeSJUMP, tag(x)_index)
             inhibit = 1
-            ->atop
+            access = 0
+            ->top
 
 c(134):     { SWID }
             def(x)
