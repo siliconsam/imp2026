@@ -20,7 +20,7 @@
     %externalroutine flush buffer
         %integer j
 
-        %if faulty = 0 %start
+        %if (faulty = 0) %start
             select output(icode out)
             printsymbol(buff(j)) %for j = 1, 1, bp
             select output(listing)

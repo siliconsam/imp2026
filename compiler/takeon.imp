@@ -774,7 +774,7 @@ l10:    select output(dlist)
 
     { write required values }
     select output(tablestream)
-    printstring("   %endoflist")
+    printstring( "%endoflist")
     newlines(2)
 
     printstring("{ calculated grammar sizes }")
@@ -909,7 +909,7 @@ l10:    select output(dlist)
         printstring(", ") %unless (i = kmax)
     %repeat
     newline
-    printstring("   %list")
+    printstring("%list")
     newline
     printstring("%endoffile")
     newline

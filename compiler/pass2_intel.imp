@@ -6539,11 +6539,15 @@ esac:
                 ! JDM JDM show macro "call" in listing
                 ! Now to say which macro was requested
                 %if (diagnose&8 #0) %start
+                    select output(listing)
+
                     spaces(38)
                     printstring( "CALL '" )
                     printstring( macroname(t) )
                     printstring( "' (MACRO "); write(t,0); printstring(")")
                     newline
+
+                    select output(object out)
                 %finish
 
             %finish %else %start
