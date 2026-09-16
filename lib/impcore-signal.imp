@@ -14,7 +14,7 @@
 %external %predicate    %spec handler found ( %integer event, address )
 %external %predicate    %spec initial entry found ( %integer address )
 %external %integer  %fn %spec handler entry address( %integer address )
-%external %integer      %spec rtl diagnose %alias "_imp_rtlflags"
+%external %integer      %spec rtl diagnose
 
 {-----------------------------------------------------------------------------}
 %external %routine impexit( %integer status )

@@ -20,12 +20,12 @@
     !
     %external %routine           %spec impmain %alias "__impmain"
 
-    %external %integer %function %spec get max input stream
-    %external %integer %function %spec get max output stream
-    %external %routine           %spec initialise io system
-    %external %routine           %spec terminate io system
+    %external %integer %function %spec  get max input stream
+    %external %integer %function %spec  get max output stream
+    %external %routine           %spec  initialise io system
+    %external %routine           %spec  terminate io system
     ! remember the level of diagnostics for run-time
-    %external %integer           %spec rtl diagnose %alias "_imp_rtlflags"
+    %external %integer                  rtl diagnose
 
     %routine %spec parse file list ( %string(255) file list, %integer io mode )
     %routine %spec usage

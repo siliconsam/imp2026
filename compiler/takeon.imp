@@ -777,35 +777,41 @@ l10:    select output(dlist)
     printstring( "%endoflist")
     newlines(2)
 
-    printstring("{ calculated grammar sizes }")
-    newline
-    printstring("%constinteger gmax1=")
-    hwrite(gmax,0)
+    { Text Table data }
+    printstring("{ Text Table data }")
     newline
 
-    printstring("%owninteger gmax=")
-    hwrite(gmax,0)
+    printstring("%conststring(8)%array text(0:255) =")
     newline
-    printstring("%constinteger imp phrase =")
-    hwrite(inits+1, 0)
-    newlines(2)
+!    printsymbol('{')
+!    hwrite(0,3)
+!    printsymbol('}')
+!    printsymbol(' ')
+    printstring("""Z"",")
+!    newline
+    { we have just output the first name already }
+    { so initialise k with good value            }
+    k = names per line - 1
+    outstring = 8
+    %cycle i = 1, 1, 255
+!        printsymbol('{')
+!        hwrite(i,3)
+!        printsymbol('}')
+!        printsymbol(' ')
 
-    printstring("{ fixed grammar entity sizes }")
+        printsymbol('"')
+        print name(i)
+        printsymbol('"')
+        printsymbol(',') %unless (i = 255)
+        k = k-1
+        k = names per line %and newline %if k <= 0
+!        newline
+    %repeat
     newline
+    outstring = -1
 
-    printstring("%constbyte min atomic=")
-    hwrite(min atomic,0)
-    newline
-    printstring("%constbyte max atomic=")
-    hwrite(max atomic,0)
-    newline
-
-    printstring("%constbyte min phrase=")
-    hwrite(min phrase,0)
-    newline
-    printstring("%constbyte max phrase=")
-    hwrite(max phrase,0)
-    newline
+    { Initial Item data }
+    printstring("{ Initial Item data }")
     newline
 
     printstring("%constbyte min initial=")
@@ -814,35 +820,6 @@ l10:    select output(dlist)
     printstring("%constbyte max initial=")
     hwrite(max initial,0)
     newline
-
-    printstring("%conststring(8)%array text(0:255) =")
-    newline
-    printsymbol('{')
-    hwrite(0,3)
-    printsymbol('}')
-    printsymbol(' ')
-    printstring("""Z"",")
-    newline
-    { we have just output the first name already }
-    { so initialise k with good value            }
-    k = names per line - 1
-    outstring = 8
-    %cycle i = 1, 1, 255
-        printsymbol('{')
-        hwrite(i,3)
-        printsymbol('}')
-        printsymbol(' ')
-
-        printsymbol('"')
-        print name(i)
-        printsymbol('"')
-        printsymbol(',') %unless (i = 255)
-!        k = k-1
-!        k = names per line %and newline %if k <= 0
-        newline
-    %repeat
-    newline
-    outstring = -1
 
     printstring("{  FLAG<1> 0<1> SS<2> 0<3> T<1> LINK<8>}")
     newline
@@ -855,6 +832,17 @@ l10:    select output(dlist)
     %repeat
     newlines(2)
 
+    { Atomic Item data }
+    printstring("{ Atomic Item data }")
+    newline
+
+    printstring("%constbyte min atomic=")
+    hwrite(min atomic,0)
+    newline
+    printstring("%constbyte max atomic=")
+    hwrite(max atomic,0)
+    newline
+
     printstring("%constbyteintegerarray atomic(min atomic:max atomic) =")
     k = 0
     %cycle i = min atomic,1,max atomic
@@ -865,6 +853,22 @@ l10:    select output(dlist)
     %repeat
     newlines(2)
 
+    { Phrase data }
+    printstring("{ Phrase data }")
+    newline
+
+    printstring("%constinteger imp phrase =")
+    hwrite(inits+1, 0)
+    newlines(2)
+
+    printstring("%constbyte min phrase=")
+    hwrite(min phrase,0)
+    newline
+    printstring("%constbyte max phrase=")
+    hwrite(max phrase,0)
+    newline
+    newline
+
     printstring("%ownshortarray phrase(min phrase:max phrase) =")
     %for i = min phrase, 1, max phrase %cycle
         newline %if (i&7 = 0)
@@ -872,6 +876,18 @@ l10:    select output(dlist)
         print string(", ") %unless (i = max phrase)
     %repeat
     newlines(2)
+
+    { Grammar Data }
+    printstring("{ Grammar Data }")
+    newline
+
+    printstring("%constinteger gmax1=")
+    hwrite(gmax,0)
+    newline
+
+    printstring("%owninteger gmax=")
+    hwrite(gmax,0)
+    newline
 
     printstring("{  MORE<1> 0<1> ORDER<2> TYPE<4> CLASS<8> }")
     newline
@@ -888,6 +904,10 @@ l10:    select output(dlist)
     printstring("0(max grammar-gmax1)")
     newlines(2)
 
+    { Grammar Link data }
+    printstring("{ Grammar Link data }")
+    newline
+
     printstring("%ownshortintegerarray glink(0:max grammar) =")
     %cycle i = 0, 1, gmax
         newline %if (i&7 = 0)
@@ -898,11 +918,19 @@ l10:    select output(dlist)
     printstring("0(max grammar-gmax1)")
     newlines(2)
 
+    { Keyword Dictionary data }
+    printstring("{ Keyword Dictionary data }")
+    newline
+
+    printstring("%constshortinteger min kdict = ")
+    hwrite(32,0)
+    newline
+
     printstring("%constshortinteger max kdict = ")
     hwrite(kmax,0)
     newline
 
-    printstring("%constshortintegerarray kdict(32:max kdict) =")
+    printstring("%constshortintegerarray kdict(min kdict:max kdict) =")
     %cycle i = 32,1,kmax
         newline %if (i&7 = 0)
         hwrite(keydict(i),7)
