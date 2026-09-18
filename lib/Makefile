@@ -23,6 +23,7 @@ IMPRTL=imprtl-check.o \
      imprtl-event.o \
      imprtl-io.o \
      imprtl-limit.o \
+     imprtl-global.o \
      imprtl-line.o \
      imprtl-mathutils.o \
      imprtl-trap.o \

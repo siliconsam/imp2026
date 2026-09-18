@@ -14,7 +14,7 @@
 %external %predicate    %spec handler found ( %integer event, address )
 %external %predicate    %spec initial entry found ( %integer address )
 %external %integer  %fn %spec handler entry address( %integer address )
-%external %integer      %spec rtl diagnose
+%external %integer      %spec rtl diag
 
 {-----------------------------------------------------------------------------}
 %external %routine impexit( %integer status )
@@ -32,7 +32,7 @@
     ! Uncomment when debugging the run-time code
     ! Do NOT delete from this source code
 
-    dumpalltrapinfo %if (rtl diagnose&32 # 0)
+    dumpalltrapinfo %if (rtl diag&32 # 0)
     
     { Remember the event data and form the event message }
     save event( line, event, sub, info )
@@ -43,7 +43,7 @@
 
         %if (sub = 0) %start
             { %stop with exit status == n }
-            messageFormatA( 6 ) %if (rtl diagnose&64 # 0)
+            messageFormatA( 6 ) %if (rtl diag&64 # 0)
         %finish
 
         %if (sub > 0) %start

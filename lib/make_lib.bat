@@ -137,7 +137,7 @@
 )
 
 @rem compile the imprtl-XXX modules
-@for %%a in (check,event,io,mathutils,trap,line,limit) do (
+@for %%a in (check,event,io,mathutils,trap,line,limit,global) do (
     @call :do_compile "imprtl-%%a" %start%  lib
 )
 

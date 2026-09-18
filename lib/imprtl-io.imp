@@ -39,7 +39,7 @@
     %external %integer   %fn %spec get char( %integer handle )
     %external %routine       %spec put char( %integer handle,ch )
     %external %routine       %spec flush( %integer handle )
-    %external %integer       %spec rtl diagnose
+    %external %integer       %spec rtl diag
 
     %predicate ok read type( %integer type )
         %true %if (type = integer type)
@@ -293,14 +293,14 @@
         adr = addr(ptr)
         type = type of(ptr)
 
-%if (rtl diagnose&128 # 0) %start
-select output( 0 )
-print string("READBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
-print string("READBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
-print string("READBUFFER: type of(ptr)=".int2ascii(type,16,0) ); newline
-print string("READBUFFER:        count=".itos(count,0) );        newline
-select output( old output stream )
-%finish
+        %if (rtl diag&128 # 0) %start
+            select output( 0 )
+            print string("READBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
+            print string("READBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
+            print string("READBUFFER: type of(ptr)=".int2ascii(type,16,0) ); newline
+            print string("READBUFFER:        count=".itos(count,0) );        newline
+            select output( old output stream )
+        %finish
 
         %signal 5,5,type %unless ok read type(type)
 
@@ -661,14 +661,14 @@ select output( old output stream )
         adr = addr(ptr)
         type = type of(ptr)
 
-%if (rtl diagnose&128 # 0) %start
-select output( 0 )
-print string("WRITEBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
-print string("WRITEBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
-print string("WRITEBUFFER: type of(ptr)=".int2ascii(type,16,0) ); newline
-print string("WRITEBUFFER:        count=".itos(count,0) );        newline
-select output( old output stream )
-%finish
+        %if (rtl diag&128 # 0) %start
+            select output( 0 )
+            print string("WRITEBUFFER: address(ptr)=".int2ascii(adr,16,0) );  newline
+            print string("WRITEBUFFER: size of(ptr)=".int2ascii(len,16,0) );  newline
+            print string("WRITEBUFFER: type of(ptr)=".int2ascii(type,16,0) ); newline
+            print string("WRITEBUFFER:        count=".itos(count,0) );        newline
+            select output( old output stream )
+        %finish
 
         ! check if we can write a valid data type
         %signal 5,5,type %unless ok write type(type) %and (len = count)
@@ -841,12 +841,13 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&128 # 0) %start
-select output( 0 )
-print string("OPENOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
-newline
-select output( old output stream )
-%finish
+                %if (rtl diag&128 # 0) %start
+                    select output( 0 )
+                    print string("OPENOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
+                    newline
+                    select output( old output stream )
+                %finish
+
                 %signal 9, 2, get error
             %else
                 streamX_handle = handle
@@ -885,12 +886,13 @@ select output( old output stream )
 
             %if (handle = 0) %start
 
-%if (rtl diagnose&128 # 0) %start
-select output( 0 )
-print string("OPENBINARYOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
-newline
-select output( old output stream )
-%finish
+                %if (rtl diag&128 # 0) %start
+                    select output( 0 )
+                    print string("OPENBINARYOUTPUT: filename='".filename."' was unable to open for stream(".itos(stream id,0).")")
+                    newline
+                    select output( old output stream )
+                %finish
+
                 %signal 9, 2, get error
             %else
                 streamX_handle = handle
