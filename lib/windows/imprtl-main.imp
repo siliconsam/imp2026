@@ -25,7 +25,7 @@
     %external %routine           %spec  initialise io system
     %external %routine           %spec  terminate io system
     ! remember the level of diagnostics for run-time
-    %external %integer                  rtl diagnose
+    %external %integer           %spec  rtl diag
 
     %routine %spec parse file list ( %string(255) file list, %integer io mode )
     %routine %spec usage
@@ -117,7 +117,7 @@
         environs == envp
 
         ! ass-u-me no debug required
-        rtl diagnose = get env as integer( "IMP_RTL_DIAGNOSE" )
+        rtl diag = get env as integer( "IMP_RTL_DIAGNOSE" )
 
         ! ok, let's see which flavour of IMP program we have
         s = getarg(1)
