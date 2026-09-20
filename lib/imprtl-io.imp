@@ -370,6 +370,13 @@
         %signal 9, 4, in_current stream %if (streamX_handle = 0)
 
         file rewind( streamX_handle )
+
+        { It has been indicated that:                        }
+        { file rewind works on a "C" file with "r" file mode }
+        { So, also indicate the input buffer is empty        }
+        streamX_empty = 1
+        streamX_lookahead = -1
+
     %end { of "reset input" }
 
     !--------------------------------------------------------------------------
