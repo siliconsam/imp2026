@@ -58,7 +58,7 @@
     %conststring(12) program ip = "Main Program"
 
     ! Main program external name
-    %conststring(8)  program ep = "__impmain"
+    %conststring(9)  program ep = "__impmain"
 
     ! prefixed to %system routine idents
     %conststring(5)  system prefix = "_imp_"
@@ -1034,11 +1034,19 @@ w(9):   warning = "Short numerical constant too big";   -> at
 w(10):  warning = "Integer numerical constant too big"; -> at
 at:
         select output(report)
-        print string("*WARNING: line")
+        print string("*WARNING: line ")
         write(current line, 0)
         print string(": ")
         print string( warning )
         newline
+
+        select output(listing)
+        print string("*WARNING: line ")
+        write(current line, 0)
+        print string(": ")
+        print string( warning )
+        newline
+
         select output(Object Out)
     %end { of "warn" }
 
@@ -4731,6 +4739,9 @@ f(V in S):
             %finish %else %if (v_type = longrealtype) %start
                 ! reals
                 abort("Load LongReal V in S")
+            %finish %else %if (v_type = stringtype) %start
+                ! strings
+                abort("Load String V in S")
             %finish %else %start
                 abort("Load Unknown type")
             %finish
@@ -6900,6 +6911,10 @@ done:
                     ! Constant strings and reals are treated as literals
                     decvar_scope = COT
                     %if (own type = stringtype) %start
+                        %if (decvar_size < current string(0)) %start
+                            { Check that the string  constant will fit the variable }
+                            warn(5)
+                        %finish
                         decvar_disp = getcots(current string)
                     %finish %else %if (own type = realtype) %or (own type = longrealtype) %start
                         ! constant reals are put in the COT.  Depending on how
