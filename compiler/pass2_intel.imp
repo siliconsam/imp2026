@@ -6914,6 +6914,7 @@ done:
                         %if (decvar_size < current string(0)) %start
                             { Check that the string  constant will fit the variable }
                             warn(5)
+                            current string(0) = decvar_size&255
                         %finish
                         decvar_disp = getcots(current string)
                     %finish %else %if (own type = realtype) %or (own type = longrealtype) %start
