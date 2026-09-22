@@ -15,6 +15,7 @@ TEST_MODE=false
 TIDY_MODE=true
 SHARE_MODE=false
 HEAP_MODE=false
+SHOW_HELP=false
 
 # Parse the arguments...
 MORETODO=true
@@ -45,12 +46,46 @@ while ${MORETODO} ; do
    X-Fi)
     TIDY_MODE=false
 	;;
+   X-h)
+    SHOW_HELP=true
+	;;
+   X-help)
+    SHOW_HELP=true
+	;;
    *)
 	MORETODO=false
 	;;
    esac
    ${MORETODO} && shift
 done
+
+if ${SHOW_HELP}; then
+    echo " -h or -help to show this help info"
+    echo " "
+    echo " -c is used to stop the linker stage"
+    echo " "
+    echo " -Fc retains the .cod file (code listing from pass2)"
+    echo " "
+    echo " -Fs retains the .lst file (listing file from pass1)"
+    echo " "
+    echo " -Fi retains the .icd, .ibj, .o files"
+    echo "     .icd file (iCode data from pass1)"
+    echo "     .ibj file (textual object file from pass2)"
+    echo "     .o file (ELF object file from pass2)"
+    echo " "
+    echo " -Fx is a combination of -c and -Fi"
+    echo " "
+    echo " -Fh when linking include heap routines"
+    echo " "
+    echo " -e test mode, don’t use executables,library and include files from /release"
+    echo "    Instead use executables from /compiler + /pass3, library+include from /lib"
+    echo " "
+    echo " -s share mode (link with the shareable IMP library + system heap library)"
+    echo "    NOT properly tested/implemented"
+    echo " "
+
+    exit 0
+fi
 
 if [ $# -ne 1 ]; then
 	echo "${PROGNAME}: No source file?" 1>&2
