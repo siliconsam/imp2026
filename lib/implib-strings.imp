@@ -616,7 +616,7 @@
 
     {------------------------------------------------------------------------}
     %external %string(255) %function I to S(%integer n, places)
-        %result = IntegerToString(n,10,places,' ',cSign)
+        %result = IntegerToString(n,10,places,' ',cSign!cPad)
     %end { of "I to S" }
 
     {------------------------------------------------------------------------}
