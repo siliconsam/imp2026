@@ -6353,7 +6353,7 @@ roper(EXPx):
 
         ! >> DUMP RETURN <<
         %routine  dump return
-            %return %if (uncond jump = next cad);          !  can't get here ?
+!            %return %if (uncond jump = next cad);          !  can't get here ?
 
             ! Pure 8086 would need these two
             !   dumprr(MOV, ESP, EBP)
