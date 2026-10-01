@@ -792,9 +792,6 @@
     { condition was non-standard (generally FPU compare) }
     %owninteger compare unsign = 0
 
-    { address of code hole }
-    %owninteger uncond jump = 0
-
     { -1 = RECORDS, 1 = PROCEDURE, 2 = SPEC }
     %owninteger block type = 1
 
@@ -4286,8 +4283,6 @@ out1:
 
             dump label(l_tag)
             l_tag = l_tag ! 16_8000
-            ! You can get here
-            uncond jump = 0
         %end { of "define label" }
 
         ! >> JUMP TO <<
@@ -4314,7 +4309,6 @@ out1:
 
             dump jump(op, JTag)
 
-            %if (op = JMP) %then uncond jump = nextcad
         %end { of "jump to" }
 
         ! >> JUMP FORWARD <<
@@ -6339,8 +6333,6 @@ roper(EXPx):
         %integerfn enter
             %integer cad;
 
-            uncond jump = -1; ! can get here
-
             ! This is a convenient place to include external definitions if needed
             %if (potype >= external) %start
                 fill external(CODE, external id)
@@ -6353,7 +6345,6 @@ roper(EXPx):
 
         ! >> DUMP RETURN <<
         %routine  dump return
-!            %return %if (uncond jump = next cad);          !  can't get here ?
 
             ! Pure 8086 would need these two
             !   dumprr(MOV, ESP, EBP)
@@ -6361,9 +6352,8 @@ roper(EXPx):
             ! but now we use this instead...
             dumpsimple(LEAVE)
 
-            dumpsimple(RET);
+            dumpsimple(RET)
 
-            uncond jump = next cad
         %end { of "dump return" }
 
         ! Routine to do "to string" as an in-line, either by making
@@ -6738,7 +6728,6 @@ esac:
             %if (level # 0) %start
                 dump label(skip proc)
                 last skip = next cad
-                Uncond Jump = 0
             %finish
         %end { of "Compile Begin" }
 
@@ -6870,7 +6859,6 @@ done:
             %if (label = 0) %start
                 dump label(skipproc)
                 last skip = next cad
-                Uncond Jump = 0
             %else
                 define label( label )
             %finish
@@ -7268,7 +7256,6 @@ done:
             loadreg(top, anyp)
             dumpum(JMP, SWT!top_base, v_disp*cWordSize, 0)      { swtab is word-size }
             pop rel
-            uncond jump = next cad
         %end { of "Switch Jump" }
 
         ! >> SET RECORD FORMAT <<
@@ -7281,7 +7268,6 @@ done:
         %routine Switch Label( %integer switch label id )
 
             v == var( switch label id )
-            uncond jump = 0
             j = top_disp
             pop stack
             
@@ -7327,7 +7313,6 @@ done:
 
             ! call imp signal, then pop the 4 parameters from the stack
             perm(signal, 4)
-            uncond jump = next cad %if (id # -1);     ! %monitor will return
         %end { of "Internal Handler" }
 
         ! >> MONITOR <<
