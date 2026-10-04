@@ -765,6 +765,9 @@
     { vector lower/upper bound }
     %integer    vlb,vub
 
+    { latest pushi value }
+    %integer last pushi
+
     { source line number }
     %owninteger current line = 0
 
@@ -949,7 +952,11 @@
         spaces(1); spaces(10 - length(s)); printstring(s)
 
         s = reg as name(v_base)
-        spaces(1); spaces(4 - length(s)); printstring(s)
+        %if (s = "???") %start
+            write(v_base,4)
+        %finish %else %start
+            spaces(1); spaces(4 - length(s)); printstring(s)
+        %finish
 
         spaces(1); write(v_disp,6)
         spaces(1); write(v_extdisp,6)
@@ -1017,7 +1024,7 @@
     { ---------------------------------------------------------------- }
     %routine  warn(%integer  n)
         %string(255) warning
-        %switch  w(1:10)
+        %switch  w(1:11)
         -> w(n)
 w(1):   warning = "Division by zero";                   -> at
 w(2):   warning = "Illegal FOR";                        -> at
@@ -1029,16 +1036,17 @@ w(7):   warning = "Illegal constant exponent";          -> at
 w(8):   warning = "Byte numerical constant too big";    -> at
 w(9):   warning = "Short numerical constant too big";   -> at
 w(10):  warning = "Integer numerical constant too big"; -> at
+w(11):  warning = "Own/External name assign not 0";     -> at
 at:
         select output(report)
-        print string("*WARNING: line ")
+        print string("**** WARNING ****: line ")
         write(current line, 0)
         print string(": ")
         print string( warning )
         newline
 
         select output(listing)
-        print string("*WARNING: line ")
+        print string("**** WARNING ****: line ")
         write(current line, 0)
         print string(": ")
         print string( warning )
@@ -4104,23 +4112,30 @@ out1:
                 top_base = 0
             %finish
 
-            ! AFORM contains the real original declared form, while
-            ! FORM contains the on-the-stack subset of possible forms
-            top_aform = w_form
-            top_form = fmap(w_form)
-            top_dim = w_dim
-            top_type = w_type
-            top_disp = w_disp
-            top_extdisp = w_disp
-            top_scope = w_scope
-            top_format = w_format
-            top_size = w_size
-            top_extra = w_extra
-            top_pbase = w_pbase
-
             ! JDM JDM remember variable name via varno and idname
             top_varno = varno
             top_idname = get symbol name( varno )
+
+            %if (top_idname = "NIL") %start
+                top_type = integer type
+                top_form = constant
+                top_scope = 0
+            %finish %else %start
+
+                ! AFORM contains the real original declared form, while
+                ! FORM contains the on-the-stack subset of possible forms
+                top_aform = w_form
+                top_form = fmap(w_form)
+                top_dim = w_dim
+                top_type = w_type
+                top_disp = w_disp
+                top_extdisp = w_disp
+                top_scope = w_scope
+                top_format = w_format
+                top_size = w_size
+                top_extra = w_extra
+                top_pbase = w_pbase
+            %finish
 
             monitor(top, "Var stack") %if (diagnose&1 # 0)
         %end { of "Stack Var" }
@@ -4154,6 +4169,9 @@ out1:
             top_type = integertype
             top_form = constant
             top_idname = ltrim(itos(n,0))
+
+            { only used inside INIT }
+            last pushi = n
 
             monitor(top, "push const") %if (diagnose&1 # 0)
         %end { of "push const" }
@@ -5541,6 +5559,12 @@ roper(EXPx):
 
             target(integertype):
             target(longtype):
+                ! JDM JDM added for temporary debug
+                %if (diagnose&4 # 0) %start
+                    monitor(lhs, "STORE LONG LHS")
+                    monitor(rhs, "STORE RHS")
+                %finish
+
                 %if (lhs_base = ESP) %start
                     %if (rhs_type = bytetype) %start
                         loadreg(rhs, any)
@@ -5954,8 +5978,24 @@ roper(EXPx):
                 ! destination
                 amap(lh)
 
-                ! ABD %string( * )%name  NOT handled special here - should be?
-                amap(rh)
+!                %if (rh_idname = "NIL") %start
+!                    rh_type = integer type
+!                    rh_form = constant
+!                    rh_scope = 0
+!                %finish %else %start
+
+                	! ABD %string( * )%name  NOT handled special here - should be?
+
+                    %if (rh_form # constant) %then amap(rh)
+
+!            	%finish
+
+
+                %if (diagnose&4 # 0) %start
+                    monitor(lh, "ASS LH ==")
+                    monitor(rh, "ASS RH ==")
+                %finish
+
             %finish
 
             %if (lh_type = recordtype) %start
@@ -6848,6 +6888,19 @@ done:
 
         ! >> COMPARE ADDRESSES <<
         %routine Compare Addresses
+
+            ! JDM JDM added for temporary debug
+            %if (diagnose&1 # 0) %start
+                monitor(stack(stp+1), "COMPAREA SOS")
+                monitor(top, "COMPAREA TOS")
+            %finish
+
+!            %if (top_idname = "NIL") %start
+!                top_type = integer type
+!                top_form = constant
+!                top_scope = 0
+!            %finish
+
             amap(stack(stp-1));                  ! Now do same as compare values
             %if (top_form # 0) %then amap(top)
             Compare Values
@@ -6915,6 +6968,15 @@ done:
                     %finish
                 %finish %else %start
                     ! must be %own or %external - use adump to put it in DATA segment
+
+!                    ! JDM JDM added for temporary debug
+!                    %if (diagnose&1 # 0) %start
+!                        monitor(stack(stp+1), "INIT")
+!                    %finish
+
+!                    warn(11) %if (decvar_type = record type) %and (decvar_form = 2) %and (stack(stp+1)_disp # 0)
+                    warn(11) %if (decvar_type = record type) %and (decvar_form = name form) %and (last pushi # 0)
+
                     decvar_scope = DATA
                     decvar_disp = datatp
                     adump
