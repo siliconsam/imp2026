@@ -434,9 +434,9 @@ more:       newline
         %integer labxx, new app
 
         { -5 : -1  - warnings }
-        {  1 : 23  - errors }
+        {  1 : 22  - errors }
         %routine fault(%integer n)
-            %switch fm(-5:22)
+            %switch fm(-5:23)
             %integer st
 
             %routine print ss
@@ -2810,6 +2810,7 @@ c(131):     { CIDENT }
                 set const(lit) %if (pending # 0)
                 def(x)
                 add operation(iCodeINIT, 1)
+!                fault(10) %if (lit # 0) %and ((t_flags>>4)&7 = record)
             %finish
             cident = x
             ->top

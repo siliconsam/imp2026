@@ -1,3 +1,9 @@
+    { Version Control Record                                                   }
+    { Version Id    Date            Author          Comment                    }
+    { 1.0           3rd Oct 2026    JD McMullin     Initial Version            }
+    { 1.1           4th Oct 2026    F Culloch       Added code support for     }
+    {                                               OPEN STORE XXX routines    }
+    {                                                                          }
 
 !    %include "impcore.types.inc"
     ! Curious naming strategy because we don't want to clobber
@@ -89,7 +95,10 @@
     %constant %integer uninitialised = 0
     %constant %integer initialised = 1
 
-    %record %format impstream ( %integer empty,lookahead, flags, %string(255) file name, %integer handle )
+	{ Fields Base, ptr, lim added to support STORE routines }
+    %record %format impstream ( %integer empty,lookahead, flags,
+                                %string(255) file name, %integer handle,
+                                %integer base, ptr, lim )
     %record %format impinput ( %integer current stream, 
                                %record(impstream) %array streams(0:MAX INPUT STREAM) )
     %record %format impoutput ( %integer current stream, previous stream,
@@ -122,6 +131,7 @@
         s_flags = 0
         s_lookahead = -1
         s_empty = 1
+        s_base = 0
     %end { of "initialise stream" }
 
     !--------------------------------------------------------------------------
@@ -315,8 +325,9 @@
         ! can't select a closed file
         streamX == in_streams( in_current stream )
 
-        %signal 9, 4, in_current stream %if (streamX_handle = 0)
-
+        %signal 9, 4, in_current stream %if (streamX_base # 0) %or
+                                            (streamX_handle = 0)
+                                            
         ! We actually load the buffer as an array of bytes
         ! We need the stream handle, count of items space, item size, buffer address
         ! Where, count * itemsz = size in bytes of buffer storage
@@ -367,9 +378,12 @@
         ! can't select a closed file
         streamX == in_streams( in_current stream )
 
-        %signal 9, 4, in_current stream %if (streamX_handle = 0)
-
-        file rewind( streamX_handle )
+        %if streamX_base # 0 %start
+            streamX_ptr = streamX_base
+        %else
+        	%signal 9, 4, in_current stream %if (streamX_handle = 0)
+        	file rewind( streamX_handle )
+        %finish
 
         { It has been indicated that:                        }
         { file rewind works on a "C" file with "r" file mode }
@@ -378,6 +392,35 @@
         streamX_lookahead = -1
 
     %end { of "reset input" }
+
+    !--------------------------------------------------------------------------
+    %routine seek store ( %record(impstream)%name streamX, %integer displacement, pos )
+        %integer new ptr
+
+        %if need to initialise %then initialise io system
+
+        %signal 9, 4, in_current stream %if (streamX_base = 0)
+
+        %if streamX_base # 0 %start
+            %if pos = 0 {SEEK_SET} %start
+                new ptr = streamX_base + displacement
+            %else %if pos = 1 {SEEK_CUR}
+                new ptr = streamX_ptr + displacement
+            %else %if pos = 2 {SEEK_END}
+                new ptr = streamX_lim + displacement
+            %else {ignore, as with files}
+                new ptr = streamX_ptr
+            %finish
+            %if streamX_base <= new ptr <= streamX_lim %start
+                streamX_ptr = new ptr
+                streamX_empty = 1  {should prob do this for files too}
+                streamX_lookahead = -1
+            %else
+                %signal 9, 3, new ptr
+            %finish
+            %return
+        %finish
+    %end { of "seek store" }
 
     !--------------------------------------------------------------------------
     %external %routine seek input( %integer displacement, pos )
@@ -389,6 +432,11 @@
         %signal 9, 9 %unless (0 < in_current stream <= MAX INPUT STREAM)
         ! can't select a closed file
         streamX == in_streams( in_current stream )
+
+        %if streamX_base # 0 %start
+            seek store(streamX, displacement, pos)
+            %return
+        %finish
 
         %signal 9, 4, in_current stream %if (streamX_handle = 0)
 
@@ -405,6 +453,8 @@
         %signal 9, 9 %unless (0 < in_current stream <= MAX INPUT STREAM)
         ! can't select a closed file
         streamX == in_streams( in_current stream )
+
+        %result = streamX_ptr - streamX_base %if streamX_base # 0
 
         %signal 9, 4, in_current stream %if (streamX_handle = 0)
 
@@ -423,7 +473,8 @@
         ! can't select a closed file
         streamX == in_streams( in_current stream )
 
-        %signal 9, 4, in_current stream %if (streamX_handle = 0)
+        %signal 9, 4, in_current stream %if (streamX_base = 0) %and
+                                            (streamX_handle = 0)
 
         name = streamX_file name
 
@@ -441,7 +492,8 @@
         ! can't select a closed file
         streamX == in_streams( stream id )
 
-        %signal 9, 4, stream id %if (streamX_handle = 0)
+        %signal 9, 4, stream id %if (streamX_base = 0) %and
+                                    (streamX_handle = 0)
 
         in_current stream = stream id
     %end { of "select input" }
@@ -456,6 +508,8 @@
         ! can't close an already closed file
         %if (0 < in_current stream <= MAX INPUT STREAM ) %start
             streamX == in_streams( in_current stream )
+
+            %if (streamX_base # 0) %then initialise stream( streamX )
 
             %if (streamX_handle # 0) %start
                 close( streamX_handle )
@@ -558,6 +612,24 @@
     %end { of "open binary input" }
 
     !--------------------------------------------------------------------------
+    %external %routine open store input ( %integer stream id, base, nbytes )
+        %record(impstream)%name streamX
+
+        %if need to initialise %then initialise io system
+
+        %signal 9, 9, stream id %unless (0 < stream id <= MAX INPUT STREAM )
+        %signal 9, 3, -2 %unless nbytes >= 0
+
+        streamX == in_streams( stream id )
+
+        streamX_flags = IS INPUT ! IS BINARY
+        streamX_base = base
+        streamX_ptr = base
+        streamX_lim = base + nbytes
+
+    %end { of "open store input" }
+
+    !--------------------------------------------------------------------------
     %external %integer %function next symbol
         %record(impstream)%name streamX
         %integer i
@@ -568,7 +640,8 @@
 
         streamX == in_streams( in_current stream )
 
-        %signal 9, 4, in_current stream %if (streamX_handle = 0)
+        %signal 9, 4, in_current stream %if (streamX_base = 0) %and
+                                            (streamX_handle = 0)
 
         ! Check to see if we already have a lookahead char (actually integer)
         %if (streamX_empty = 1) %start
@@ -584,7 +657,14 @@
             %finish
 
             ! remember ch for future use
-            streamX_lookahead = get char ( streamX_handle )
+            %if streamX_base # 0 %start
+                %signal 9,0, in_current stream %if (eof flag = 1) %and
+                                                   (streamX_ptr == streamX_lim)
+                streamX_lookahead = byte integer(streamX_ptr)
+                streamX_ptr = streamX_ptr + 1
+            %else
+	            streamX_lookahead = get char ( streamX_handle )
+            %finish
             streamX_empty = 0
 
             ! Are we attempting to read after the end of file
@@ -647,6 +727,12 @@
 
         streamX == in_streams( in_current stream )
 
+        %if streamX_base # 0 %start
+           %false %if streamX_empty = 0
+           %true %if streamX_ptr = streamX_lim
+           %false
+        %finish
+
         ! can't select a closed file
         %signal 9, 5, in_current stream %if (streamX_handle = 0)
 
@@ -691,7 +777,8 @@
         ! can't select a closed file
         streamX == out_streams( out_current stream )
 
-        %signal 9, 5, out_current stream %if (streamX_handle = 0)
+        %signal 9, 5, out_current stream %if (streamX_base # 0) %or
+                                             (streamX_handle = 0)
 
         ! We don't need to know the variables data-type (from type of(ptr))
         ! We just need the variable size and its address
@@ -714,7 +801,7 @@
         %if need to initialise %then initialise io system
 
         %result = out_previous stream
-    %end { of "previous output stream" }
+    %end { of "old output stream" }
 
     !--------------------------------------------------------------------------
     %external %routine reset output
@@ -726,6 +813,11 @@
         %signal 9, 9 %unless (0 < out_currentstream <= MAX OUTPUT STREAM)
         ! can't select a closed file
         streamX == out_streams( out_current stream )
+
+        %if streamX_base # 0 %start
+            streamX_ptr = streamX_base
+            %return
+        %finish
 
         %signal 9, 5, out_current stream %if (streamX_handle = 0)
 
@@ -742,6 +834,11 @@
         %signal 9, 9 %unless (0 < out_currentstream <= MAX OUTPUT STREAM)
         ! can't select a closed file
         streamX == out_streams( out_current stream )
+
+        %if streamX_base # 0 %start
+            seek store(streamX, displacement, pos)
+            %return
+        %finish
 
         %signal 9, 5, out_current stream %if (streamX_handle = 0)
 
@@ -761,6 +858,8 @@
         ! can't select a closed file
         streamX == out_streams( out_current stream )
 
+        %result = streamX_ptr - streamX_base %if (streamX_base # 0)
+
         %signal 9, 5, out_current stream %if (streamX_handle = 0)
 
         %result = tell( streamX_handle )
@@ -777,7 +876,8 @@
         ! can't select a closed file
         streamX == out_streams( out_current stream )
 
-        %signal 9, 5, out_current stream %if (streamX_handle = 0)
+        %signal 9, 5, out_current stream %if (streamX_base = 0) %and
+                                             (streamX_handle = 0)
 
         %result = streamX_file name
     %end { of "output name" }
@@ -794,7 +894,8 @@
         ! can't select a closed file
         streamX == out_streams( stream id )
 
-        %signal 9, 5, stream id %if (streamX_handle = 0)
+        %signal 9, 5, stream id %if (streamX_base = 0) %and
+                                    (streamX_handle = 0)
 
         out_previous stream = out_current stream
         out_current stream = stream id
@@ -810,6 +911,8 @@
         ! can't close an already closed file
         %if (0 < out_current stream <= MAX OUTPUT STREAM ) %start
             streamX == out_streams( out_current stream )
+
+            %if (streamX_base # 0) %then initialise stream( streamX )
 
             %if (streamX_handle # 0) %start
                 close( streamX_handle )
@@ -910,6 +1013,24 @@
     %end { of "open binary output" }
 
     !--------------------------------------------------------------------------
+    %external %routine open store output ( %integer stream id, base, nbytes )
+        %record(impstream)%name streamX
+
+        %if need to initialise %then initialise io system
+
+        %signal 9, 9, stream id %unless (0 < stream id <= MAX OUTPUT STREAM )
+        %signal 9, 3, -2 %unless nbytes >= 0
+
+        streamX == out_streams( stream id )
+
+        streamX_flags = IS OUTPUT ! IS BINARY
+        streamX_base = base
+        streamX_ptr = base
+        streamX_lim = base + nbytes
+
+    %end { of "open store output" }
+
+    !--------------------------------------------------------------------------
     %external %routine flush output
         %record(impstream)%name streamX
 
@@ -919,6 +1040,8 @@
         %signal 9, 9, out_current stream %unless (0 <= out_current stream <= MAX OUTPUT STREAM )
 
         streamX == out_streams( out_current stream )
+
+        %return %if (streamX_base # 0)
 
         %signal 9, 5, out_current stream %if (streamX_handle = 0)
 
@@ -935,12 +1058,17 @@
 
         streamX == out_streams( out_current stream )
 
-        %signal 9, 5, out_current stream %if (streamX_handle = 0)
+        %signal 9, 5, out_current stream %if (streamX_base = 0) %and
+                                             (streamX_handle = 0)
 
         ! Not sure what the official IMP behaviour is for output on a closed file.
         ! We choose to silently ignore it...
         ! check file open before writing?
-        %if (streamX_handle # 0) %start
+        %if (streamX_base # 0) %start
+            %signal 2, 2 %if streamX_ptr = streamX_lim
+            byte integer(streamX_ptr) = c
+            streamX_ptr = streamX_ptr + 1  {no flush required}
+        %else %if (streamX_handle # 0)
             put char( streamX_handle, c)
             %if (c = nl) %then flush output 
         %finish

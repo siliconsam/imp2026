@@ -867,7 +867,6 @@ l10:    select output(dlist)
     printstring("%constbyte max phrase=")
     hwrite(max phrase,0)
     newline
-    newline
 
     printstring("%ownshortarray phrase(min phrase:max phrase) =")
     %for i = min phrase, 1, max phrase %cycle

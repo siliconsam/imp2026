@@ -46,6 +46,7 @@
 %external %routine              %spec   Select Input( %integer  n )
 %external %routine              %spec   Open Input( %integer  n, %string(255) fd )
 %external %routine              %spec   Open Binary Input( %integer  n, %string(255) fd )
+%external %routine              %spec   Open Store Input ( %integer stream id, base, nbytes )
 %external %routine              %spec   Close Input
 %external %routine              %spec   Reset Input
 %external %routine              %spec   Seek Input( %integer displacement, %integer start point)
@@ -71,6 +72,7 @@
 %external %routine              %spec   Select Output( %integer  n )
 %external %routine              %spec   Open Output( %integer  n,%string(255) fd )
 %external %routine              %spec   Open Binary Output( %integer  n,%string(255) fd )
+%external %routine              %spec   Open Store Output ( %integer stream id, base, nbytes )
 %external %routine              %spec   Close Output
 %external %routine              %spec   Reset Output
 %external %routine              %spec   Seek Output( %integer displacement, %integer start point)
