@@ -6294,6 +6294,17 @@ roper(EXPx):
         ! >> COMPARE STRINGS <<
         %routine  compare strings(%record(stackfm)%name  l,r)
             %record(stackfm)%name  temp
+
+!            %if (diagnose&1 # 0) %start     
+!                show stack( Listing )
+!            %finish
+
+            ! JDM JDM added for temporary debug
+            %if (diagnose&1 # 0) %start
+                monitor(l, "COMPARES LHS")
+                monitor(r, "COMPARES RHS")
+            %finish
+
             %if (l_base = COT) %and (l_disp = null string) %start
                 swap(l,r)
                 invert = invert !! 1
@@ -6315,6 +6326,13 @@ roper(EXPx):
 
         ! >> COMPARE <<
         %routine  compare(%record(stackfm)%name  l,r)
+
+            ! JDM JDM added for temporary debug
+            %if (diagnose&1 # 0) %start
+                monitor(l, "COMPARE LHS")
+                monitor(r, "COMPARE RHS")
+            %finish
+
             %if (l_type = generaltype) %or (l_type = stringtype) %start
                 compare strings(l,r)
                 %return
@@ -6857,17 +6875,22 @@ done:
             LHS == stack(stp-1)
             RHS == top
 
-            %if (diagnose&1 # 0) %start     
-                show stack( Listing )
+            ! JDM JDM added for temporary debug
+            %if (diagnose&1 # 0) %start
+                monitor(lhs, "COMPARED LHS")
+                monitor(rhs, "COMPARED RHS")
             %finish
 
-            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
+!            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
             { tell the compare routine }
             { This is the a op b comparison step }
             { of an "a op b op c" comparison }
             compare mode = 1
             { we can interchange lhs, rhs for a compare }
             swap(lhs,rhs)
+
+!            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
+
             compare(lhs,rhs)
             { We have swopped variables so invert the expected following test }
             invert = 1
@@ -6889,20 +6912,9 @@ done:
         ! >> COMPARE ADDRESSES <<
         %routine Compare Addresses
 
-            ! JDM JDM added for temporary debug
-            %if (diagnose&1 # 0) %start
-                monitor(stack(stp+1), "COMPAREA SOS")
-                monitor(top, "COMPAREA TOS")
-            %finish
-
-!            %if (top_idname = "NIL") %start
-!                top_type = integer type
-!                top_form = constant
-!                top_scope = 0
-!            %finish
-
             amap(stack(stp-1));                  ! Now do same as compare values
             %if (top_form # 0) %then amap(top)
+
             Compare Values
         %end { of "Compare Addresses" }
 
@@ -6969,12 +6981,7 @@ done:
                 %finish %else %start
                     ! must be %own or %external - use adump to put it in DATA segment
 
-!                    ! JDM JDM added for temporary debug
-!                    %if (diagnose&1 # 0) %start
-!                        monitor(stack(stp+1), "INIT")
-!                    %finish
-
-!                    warn(11) %if (decvar_type = record type) %and (decvar_form = 2) %and (stack(stp+1)_disp # 0)
+                    ! Detect non-zero assignment to %record %name
                     warn(11) %if (decvar_type = record type) %and (decvar_form = name form) %and (last pushi # 0)
 
                     decvar_scope = DATA
