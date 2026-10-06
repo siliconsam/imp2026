@@ -32,6 +32,24 @@
         %result = s
     %end
 
+    %external %integer %fn get symbol tf( %integer tag )
+        %integer n
+        n = symbol(tag)_tf
+        %result = n
+    %end
+
+    %external %integer %fn get symbol size( %integer tag )
+        %integer n
+        n = symbol(tag)_size
+        %result = n
+    %end
+
+    %external %integer %fn get symbol scope( %integer tag )
+        %integer n
+        n = symbol(tag)_scope
+        %result = n
+    %end
+
     %external %string(15) %fn get own String( %integer flags )
         %string(15) s
         %label esac

@@ -4094,7 +4094,9 @@ out1:
         ! into the base register.
         %routine  Stack Var(%integer var no)
             %record(varfm)%name  w
-
+            %integer tf,type,form
+            %integer scope
+            
             abort("Stack Var Idx") %unless 0 <= var no %and var no <= max vars
             w == var(varno)
             stp = stp + 1
@@ -4116,14 +4118,33 @@ out1:
             top_varno = varno
             top_idname = get symbol name( varno )
 
-            %if (top_idname = "NIL") %start
+            ! JDM JDM temp debug
+            %if (diagnose&1 # 0) %start
+                monitor(top, "Pre-Var stack")
+            %finish
+
+            { Look out for %constant XXX %name variables        }
+            { ((symbol tf)>>4)&15 = type, type not needed       }
+            { (symbol tf)&15      = form, form = 2 => %name     }
+            { symbol scope = 2                     => %constant }
+
+            { Get the var definition data }
+            tf = get symbol tf( varno )&255
+            scope = get symbol scope( varno )&255
+
+            type = (tf>>4)&15
+            form = tf&15
+
+            %if (form = 2) %and (scope = 2) %start
+                { we have found that this "PUSH" variable is a %constant %name }
+                { but we don't know it's type, could be %record, %integer, ... }
                 top_type = integer type
                 top_form = constant
                 top_scope = 0
+                top_disp = w_disp
             %finish %else %start
-
-                ! AFORM contains the real original declared form, while
-                ! FORM contains the on-the-stack subset of possible forms
+                { AFORM contains the real original declared form, while   }
+                { FORM contains the on-the-stack subset of possible forms }
                 top_aform = w_form
                 top_form = fmap(w_form)
                 top_dim = w_dim
@@ -4409,6 +4430,9 @@ out1:
 
             {    8,        9, 10, 11,      12,  13,              14,                  15  }
                 -6, V in REC, -7, -8,      -9, -10, {PGM LABEL} -11, {record format} -12
+
+            { JDM JDM defend against constant variables }
+            %return %if (v_form = constant)
 
             ! ABD - should be code here to deal with ADDR(pgm label)
             f = addr map(v_form)
@@ -5978,18 +6002,8 @@ roper(EXPx):
                 ! destination
                 amap(lh)
 
-!                %if (rh_idname = "NIL") %start
-!                    rh_type = integer type
-!                    rh_form = constant
-!                    rh_scope = 0
-!                %finish %else %start
-
-                	! ABD %string( * )%name  NOT handled special here - should be?
-
-                    %if (rh_form # constant) %then amap(rh)
-
-!            	%finish
-
+               	! ABD %string( * )%name  NOT handled special here - should be?
+                amap(rh)
 
                 %if (diagnose&4 # 0) %start
                     monitor(lh, "ASS LH ==")
@@ -6881,15 +6895,12 @@ done:
                 monitor(rhs, "COMPARED RHS")
             %finish
 
-!            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
             { tell the compare routine }
             { This is the a op b comparison step }
             { of an "a op b op c" comparison }
             compare mode = 1
             { we can interchange lhs, rhs for a compare }
             swap(lhs,rhs)
-
-!            %if (rhs_type = realtype) %or (rhs_type = longrealtype) %then loadreg(rhs, anyf) %else loadreg(rhs, any)
 
             compare(lhs,rhs)
             { We have swopped variables so invert the expected following test }
@@ -6913,7 +6924,7 @@ done:
         %routine Compare Addresses
 
             amap(stack(stp-1));                  ! Now do same as compare values
-            %if (top_form # 0) %then amap(top)
+            amap(top)
 
             Compare Values
         %end { of "Compare Addresses" }
@@ -6982,7 +6993,8 @@ done:
                     ! must be %own or %external - use adump to put it in DATA segment
 
                     ! Detect non-zero assignment to %record %name
-                    warn(11) %if (decvar_type = record type) %and (decvar_form = name form) %and (last pushi # 0)
+!                    warn(11) %if (decvar_type = record type) %and (decvar_form = name form) %and (last pushi # 0)
+                    warn(11) %if (decvar_type = record type) %and (decvar_form # name form) %and (last pushi # 0)
 
                     decvar_scope = DATA
                     decvar_disp = datatp
@@ -7008,6 +7020,7 @@ done:
                 %finish
 
                 amap(top)
+
                 loadreg(top, EAX)
                 pop rel
                 -> esac
@@ -7267,8 +7280,6 @@ done:
                     decvar_disp = frame
 
                     ! force arrayname?
-!                   old code which needs to be made clearer
-!                    %if (decvar_form = array form) %or (decvar_form = name array form) %then decvar_form = decvar_form + 1
                     %if (decvar_form = array form) %then decvar_form = array name form
                     %if (decvar_form = name array form) %then decvar_form = name array name form
 

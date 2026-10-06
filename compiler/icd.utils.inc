@@ -3,6 +3,9 @@
     %external %integer     %function %spec get maxtag
     %external              %routine  %spec set symbol data( %integer tag, %string(255) name, %integer tf, size, scope)
     %external %string(255) %function %spec get symbol name( %integer tag )
+    %external %integer     %function %spec get symbol tf( %integer tag )
+    %external %integer     %function %spec get symbol size( %integer tag )
+    %external %integer     %function %spec get symbol scope( %integer tag )
     %external %string(15)  %function %spec get own String( %integer flags )
     %external %string(63)  %function %spec get flags string( %integer flags )
     %external %string(255) %function %spec get type def( %integer type,size )
