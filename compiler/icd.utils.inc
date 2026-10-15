@@ -6,15 +6,16 @@
     %external %integer     %function %spec get symbol tf( %integer tag )
     %external %integer     %function %spec get symbol size( %integer tag )
     %external %integer     %function %spec get symbol scope( %integer tag )
-    %external %string(15)  %function %spec get own String( %integer flags )
-    %external %string(63)  %function %spec get flags string( %integer flags )
-    %external %string(255) %function %spec get type def( %integer type,size )
-    %external %integer     %function %spec get entry type( %integer type, size )
-    %external %string(15)  %function %spec get typeof String( %integer type )
-    %external %string(15)  %function %spec get type name( %integer type)
-    %external %string(15)  %function %spec get external form name( %integer form )
-    %external %string(15)  %function %spec get internal form name( %integer form )
-    %external %string(15)  %function %spec getICodeName( %integer code )
+
+    %external %string(15)  %function %spec form own String( %integer flags )
+    %external %string(63)  %function %spec form flags string( %integer flags )
+    %external %string(255) %function %spec form type def( %integer type,size )
+    %external %integer     %function %spec form entry type( %integer type, size )
+    %external %string(15)  %function %spec form typeof String( %integer type )
+    %external %string(15)  %function %spec form type name( %integer type)
+    %external %string(15)  %function %spec form external form name( %integer form )
+    %external %string(15)  %function %spec form internal form name( %integer form )
+    %external %string(15)  %function %spec form ICode Name( %integer code )
     %external %integer     %function %spec ReadTag
     %external %integer     %function %spec ReadTagComma
     %external %integer     %function %spec ReadInteger

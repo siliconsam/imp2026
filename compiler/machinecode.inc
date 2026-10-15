@@ -105,8 +105,8 @@
         spaces(1); print string("VAR entry ".prefix); newline
         spaces(5); print string("tag="); write(tag,0); newline
         spaces(5); print string("name=".get symbol name(tag)); newline
-        spaces(5); print string("type=".get type name(v_type)); newline
-        spaces(5); print string("form=".get internal form name(v_form)); newline
+        spaces(5); print string("type=".form type name(v_type)); newline
+        spaces(5); print string("form=".form internal form name(v_form)); newline
         spaces(5); print string("level="); write(v_level,0); newline
         spaces(5); print string("scope="); write(v_scope,0); newline
         spaces(5); print string("reloc=".relocname(v_scope>>4) ); newline

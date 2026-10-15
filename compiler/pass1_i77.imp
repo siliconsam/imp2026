@@ -893,7 +893,7 @@ s5:             %if (sym # nl) %start
                     %finish
                     key = kdict(sym)
                     %if (key&3 = 0) %and (symtype = 2) %start          { keyword }
-                        %if (sym = 'C') %and (nextsymbol = nl) %start  { %c... }
+                        %if ((sym = 'C') %or (sym = 'c')) %and (nextsymbol = nl) %start  { %c... }
                             getsym
                             cont = '+'
                             ->s1

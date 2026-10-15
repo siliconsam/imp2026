@@ -9,7 +9,7 @@
 
     ! This represents the initial defined attributes of a symbol
     %recordformat  symbolfm( %string(255) name,
-                             %integer tf,size,scope )
+                             %integer tag,tf,size,scope )
     %own %record(symbolfm)%array  symbol(0:max symbols)
 
     ! Debug routine to see the maximum symbols defined
@@ -18,6 +18,7 @@
     %end
 
     %external %routine set symbol data( %integer tag, %string(255) name, %integer tf, size, scope)
+        symbol( tag )_tag = tag
         symbol( tag )_name = name
         symbol( tag )_tf = tf
         symbol( tag )_size = size
@@ -50,7 +51,7 @@
         %result = n
     %end
 
-    %external %string(15) %fn get own String( %integer flags )
+    %external %string(15) %fn form own String( %integer flags )
         %string(15) s
         %label esac
         %switch sw(0:15)
@@ -69,7 +70,7 @@
         %result = s
     %end
 
-    %external %string(63) %fn get flags string( %integer flags )
+    %external %string(63) %fn form flags string( %integer flags )
         %string(63) s
 
         s = ""
@@ -98,7 +99,7 @@
         %result = s
     %end
 
-    %external %string(255) %fn get type def( %integer type,size )
+    %external %string(255) %fn form type def( %integer type,size )
         %string(255) s,so
         %label esac
         %switch sw(0:15)
@@ -192,7 +193,7 @@
     ! type, size are values from the "Define Var" iCode parameters
     ! type represent the type of each array entry
     ! size represents the size of the simple var (not the array size)
-    %external %integer %fn get entry type( %integer type, size )
+    %external %integer %fn form entry type( %integer type, size )
         %label esac
         %switch sw(0:15)
         %integer t
@@ -249,7 +250,7 @@
         %result = t
     %end
 
-    %external %string(15) %function get type name( %integer type)
+    %external %string(15) %function form type name( %integer type)
         %string(15) name
         %label esac
         %switch n(0:15)
@@ -277,7 +278,7 @@
         %result = name
     %end
 
-    %external %string(15) %function get external form name( %integer form )
+    %external %string(15) %function form external form name( %integer form )
         %string(15) name
         %label esac
         %switch n(0:15)
@@ -305,7 +306,7 @@
         %result = name;
     %end
 
-    %external %string(15) %function get internal form name( %integer form )
+    %external %string(15) %function form internal form name( %integer form )
         %string(15) name
         %label esac
         %switch n(0:15)
@@ -332,7 +333,7 @@
     ! The individual switch entries MUST match those in the assemble routine
     ! If the iCode language is extended/re-ordered then this routine
     ! must be updated.
-    %external %string(15) %function getICodeName( %integer code )
+    %external %string(15) %function form ICode Name( %integer code )
         %string(15) s
         %label esac
         %switch c(0:255)

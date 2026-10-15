@@ -104,10 +104,10 @@
     %record %format impoutput ( %integer current stream, previous stream,
                                 %record(impstream) %array streams(0:MAX OUTPUT STREAM) )
 
-    %own %record (impinput) in
-    %own %record (impoutput) out
-    %own %record (impstream) null stream
-    %own %record (impstream) error stream
+    %own %record (impinput) in = 0
+    %own %record (impoutput) out = 0
+    %own %record (impstream) null stream = 0
+    %own %record (impstream) error stream = 0
 
     %own %integer initialised state = uninitialised
     %external %integer fileerror %alias "_errno"

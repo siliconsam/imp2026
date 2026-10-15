@@ -879,6 +879,22 @@
     ! manipulation and debug                                           }
     { ---------------------------------------------------------------- }
 
+    %string(255) %function ltrim( %string(255) sx )
+        %string(255) s
+
+        s = sx
+        s = sub string(s, 2, length(s)) %while charno(s,1)=' '
+        %result = s
+    %end { of "ltrim" }
+        
+    %string(255) %function trim real( %string(255) sx )
+        %string(255) s
+
+        s = ltrim(sx)
+        length(s) = length(s) - 1 %while (charno(s,length(s))='0') %and (charno(s,length(s) - 1) # '.')
+        %result = s
+    %end { of "trim real" }
+
     %string(255) %function hexint( %integer nn, places )
         %own %string(16) basechar = "0123456789ABCDEF"
         %string(31) reversed,human
@@ -945,10 +961,10 @@
         spaces(1); write(v_stackid,7)
         spaces(1); write(v_varno,5)
         printstring(" :" )
-        s = get type name(v_type)
+        s = form type name(v_type)
         spaces(1); spaces(13 - length(s)); printstring(s)
 
-        s = get internal form name(v_form)
+        s = form internal form name(v_form)
         spaces(1); spaces(10 - length(s)); printstring(s)
 
         s = reg as name(v_base)
@@ -1092,6 +1108,20 @@ at:
 
         select output(object out)
     %end { of "float monitor" }
+
+    { ---------------------------------------------------------------- }
+    { >> SHOW ROUTINE CALL <<                                          }
+    { ---------------------------------------------------------------- }
+    %routine Show Routine Call( %string(63) s )
+
+        select output(listing)
+
+        printstring("**** ")
+        printstring( s )
+        newline
+
+        select output(object out)
+    %end { of "Show Routine Call" }
 
     { ---------------------------------------------------------------- }
     { >> ICODE CHECK <<                                                }
@@ -3786,7 +3816,7 @@ out1:
             ! simple arrays have their bounds defined AFTER the "Define Var"
             ! %switch arrays have their bounds defined BEFORE the "Define Var"
             !     and we would "tag" them as "label" array entry type
-            array entry type = get entry type( type, size )
+            array entry type = form entry type( type, size )
 
             new = 0
             round = cAlign
@@ -4094,9 +4124,10 @@ out1:
         ! into the base register.
         %routine  Stack Var(%integer var no)
             %record(varfm)%name  w
-            %integer tf,type,form
-            %integer scope
-            
+            %integer tf,type,form,scope
+
+            Show Routine Call("STACK VAR") %if (diagnose&32 # 0)
+
             abort("Stack Var Idx") %unless 0 <= var no %and var no <= max vars
             w == var(varno)
             stp = stp + 1
@@ -4123,6 +4154,42 @@ out1:
                 monitor(top, "Pre-Var stack")
             %finish
 
+!            { Look out for %constant XXX %name variables        }
+!            { ((symbol tf)>>4)&15 = type, type not needed       }
+!            { (symbol tf)&15      = form, form = 2 => %name     }
+!            { symbol scope = 2                     => %constant }
+!
+!            { Get the var definition data }
+!            tf = get symbol tf( varno )&255
+!            scope = get symbol scope( varno )&255
+!
+!            type = (tf>>4)&15
+!            form = tf&15
+!
+!            %if (w_form = 2) %and (w_scope = 2) %start
+!                { we have found that this "PUSH" variable is a %constant %name }
+!                { but we don't know it's type, could be %record, %integer, ... }
+!                top_type = integer type
+!                top_form = constant
+!                top_scope = 0
+!                top_disp = w_disp
+!                top_size = w_size
+!            %finish %else %start
+!                { AFORM contains the real original declared form, while   }
+!                { FORM contains the on-the-stack subset of possible forms }
+!                top_aform = w_form
+!                top_form = fmap(w_form)
+!                top_dim = w_dim
+!                top_type = w_type
+!                top_disp = w_disp
+!                top_extdisp = w_disp
+!                top_scope = w_scope
+!                top_format = w_format
+!                top_size = w_size
+!                top_extra = w_extra
+!                top_pbase = w_pbase
+!            %finish
+
             { Look out for %constant XXX %name variables        }
             { ((symbol tf)>>4)&15 = type, type not needed       }
             { (symbol tf)&15      = form, form = 2 => %name     }
@@ -4135,13 +4202,19 @@ out1:
             type = (tf>>4)&15
             form = tf&15
 
+            { Look out for %constant XXX %name variables        }
+            { form  = 2 => %name                                }
+            { scope = 2 => %constant                            }
+            { Need to overwrite fields for a %constant %name    }
             %if (form = 2) %and (scope = 2) %start
-                { we have found that this "PUSH" variable is a %constant %name }
-                { but we don't know it's type, could be %record, %integer, ... }
+                { So, this "PUSH" variable is a %constant %name }
+                { but it's type can be ignored                  }
+                { It could be %record, %integer, ...            }
                 top_type = integer type
                 top_form = constant
                 top_scope = 0
-                top_disp = w_disp
+!                top_disp = w_disp
+                top_size = w_size
             %finish %else %start
                 { AFORM contains the real original declared form, while   }
                 { FORM contains the on-the-stack subset of possible forms }
@@ -4161,25 +4234,10 @@ out1:
             monitor(top, "Var stack") %if (diagnose&1 # 0)
         %end { of "Stack Var" }
 
-        %string(255) %function ltrim( %string(255) sx )
-            %string(255) s
-
-            s = sx
-            s = sub string(s, 2, length(s)) %while charno(s,1)=' '
-            %result = s
-        %end
-        
-        %string(255) %function trim real( %string(255) sx )
-            %string(255) s
-
-            s = ltrim(sx)
-            length(s) = length(s) - 1 %while (charno(s,length(s))='0') %and (charno(s,length(s) - 1) # '.')
-            %result = s
-        %end
-
         ! >> PUSH CONST <<
         ! Push a constant on the stack
         %routine  push const(%integer  n)
+
             stp = stp + 1
             %if (stp > Max Stack) %then abort("Stack Const")
             top == stack(stp)
@@ -4200,6 +4258,7 @@ out1:
         ! >> PUSH REAL CONST <<
         ! Push a (l)real constant on the stack
         %routine  push real const(%longreal f )
+
             stp = stp + 1
             %if (stp > Max Stack) %then abort("Stack (L)Real Const")
             top == stack(stp)
@@ -4482,6 +4541,7 @@ out1:
         %routine  address(%record(stackfm)%name  v)
             %integer  type, form
    
+            Show Routine Call("ADDRESS") %if (diagnose&32 # 0)
             monitor(v, "ADDRESS") %if (diagnose&2 # 0)
 
             form = v_form
@@ -4526,7 +4586,7 @@ out1:
         ! Load variable V into register R
         ! Along the way any register the variable owned is released, and
         ! the new register is claimed.
-        %routine LoadReg(%record(stackfm)%name v, %integer r)
+        %routine Load Reg(%record(stackfm)%name v, %integer r)
             %switch f(0:9)
             %integer ptr, op
 
@@ -5822,6 +5882,8 @@ roper(EXPx):
             %integer  p
             %integer  r
 
+            Show Routine Call("ASSIGN") %if (diagnose&32 # 0)
+
             abort("Assign Stack") %if (stp < 2)
 
             rh == top
@@ -6122,6 +6184,7 @@ roper(EXPx):
             %record(stackfm)%name av
             %integer type, form, size, format
 
+            Show Routine Call("ARRAY REF") %if (diagnose&32 # 0)
             %if (mode # 0) %then %start
                 ! Put non-terminal index onto stack for PERM
                 %if (top_type = bytetype) %or (top_type = shorttype) %start
@@ -6245,6 +6308,7 @@ roper(EXPx):
         ! test a real/integer/byte variable against zero
         %routine  test zero(%record(stackfm)%name  v)
 
+            Show Routine Call("TEST ZERO") %if (diagnose&32 # 0)
             %if (v_type = integer type) %or (v_type = byte type) %or (v_type = short type) %start
                 loadreg(v,any)
                 dumpri(CMP, v_base, 0)
@@ -6263,6 +6327,7 @@ roper(EXPx):
         ! >> COMPARE REALS <<
         %routine  compare reals(%record(stackfm)%name  l,r)
 
+            Show Routine Call("COMPARE REALS") %if (diagnose&32 # 0)
             { TOS == Top On FPU Stack             }
             { SOS == Second On FPU Stack          }
 
@@ -6308,10 +6373,6 @@ roper(EXPx):
         ! >> COMPARE STRINGS <<
         %routine  compare strings(%record(stackfm)%name  l,r)
             %record(stackfm)%name  temp
-
-!            %if (diagnose&1 # 0) %start     
-!                show stack( Listing )
-!            %finish
 
             ! JDM JDM added for temporary debug
             %if (diagnose&1 # 0) %start
@@ -6380,6 +6441,7 @@ roper(EXPx):
         ! >> RESOLVE <<
         %routine  resolve( %integer  flag )
 
+            Show Routine Call("RESOLVE") %if (diagnose&32 # 0)
             !S -> A.(B).C
             %if (flag&1 = 0) %then push const(0) %else amap(top); ! C missing?
             loadreg(top, any)
@@ -6712,6 +6774,7 @@ esac:
             ! Lock a value into a temporary to make sure it is invariant
             %routine  stab(%record(stackfm)%name  v,  %integer  type)
                 %integer  t,r
+
                 %return %if const(v)
                 loadreg(v,any)
                 r = v_base
@@ -6771,6 +6834,7 @@ esac:
 
         ! >> COMPILE END OF BLOCK <<
         %routine End of Block
+
             %if (amode >= 0) %start
                 ! No return code for %endoffile
                 dump return
@@ -6782,6 +6846,7 @@ esac:
 
         ! >> COMPILE BEGIN <<
         %routine Compile Begin
+
             decvar == begin
             decvar_disp = new tag
             otype = 0
@@ -6810,6 +6875,7 @@ esac:
             %real       rv32
             %switch ot(generaltype:labeltype)
 
+            Show Routine Call("ADUMP") %if (diagnose&32 # 0)
             ->ot(own type)
 ot(generaltype):
             abort("General Own?")
@@ -6872,6 +6938,7 @@ done:
         ! >> USER LABEL <<
         %integerfn user label(%integer lab)
             %record(varfm)%name v
+
             %if (lab > names) %start
                 names = lab
                 v == var(lab)
@@ -6913,6 +6980,7 @@ done:
 
         ! >> COMPARE VALUES <<
         %routine Compare Values
+
             LHS == stack(stp-1)
             RHS == top
             compare(lhs,rhs)
@@ -6994,6 +7062,7 @@ done:
 
                     ! Detect non-zero assignment to %record %name
 !                    warn(11) %if (decvar_type = record type) %and (decvar_form = name form) %and (last pushi # 0)
+!                    warn(11) %if (decvar_type = record type) %and (decvar_form # name form) %and (last pushi # 0)
                     warn(11) %if (decvar_type = record type) %and (decvar_form # name form) %and (last pushi # 0)
 
                     decvar_scope = DATA
@@ -7330,6 +7399,7 @@ done:
 
         ! >> SWITCH DUMP <<
         %routine Switch Jump( %integer switch id )
+
             v == var( switch id )
             push const(cWordSize)
             Operation(MULx);        { subscript * cWordSize }
@@ -7340,6 +7410,7 @@ done:
 
         ! >> SET RECORD FORMAT <<
         %routine Set Record Format( %integer format id )
+
             top_format = format id
             top_type   = recordtype
         %end { of "Set Record Format" }
@@ -7358,6 +7429,7 @@ done:
 
         ! >> CONSTANT BOUNDS <<
         %routine Constant Bounds
+
             vub = top_disp
             pop stack
 
@@ -7397,6 +7469,7 @@ done:
 
         ! >> MONITOR <<
         %routine Machine Monitor
+
             Internal Handler ( -1 )
         %end { of "Machine Monitor" }
 
@@ -7462,7 +7535,7 @@ done:
         %end { of "Event Trap" }
 
         ! >> DOUBLE OP <<
-        %routine DoubleOp( %integer opr )
+        %routine Double Op( %integer opr )
             %integer j,t
 
             lhs == stack(stp-1)
@@ -7553,20 +7626,22 @@ done:
         %end { of "Start Params" }
 
         ! >> ALTERNATE START <<
-        %routine AlternateStart
+        %routine Alternate Start
+
             decvar == procvar
             assemble(-2,labs,names)
         %end { of "AlternateStart" }
 
         ! >> ALTERNATE NEXT <<
-        %routine AlternateNext
+        %routine Alternate Next
+
             ! Compile the next alternate - update limit and set frame back to where we started
             max frame = frame %if (frame > max frame)
             frame = old frame
         %end { of "AlternateNext" }
 
         ! >> ALTERNAT FORMAT <<
-        %predicate AlternateFormat( %integer N )
+        %predicate Alternate Format( %integer N )
 
             ! Check the ICODE for faults
             ! and abort for any faulty intermediate code
@@ -7614,7 +7689,7 @@ done:
             printstring( "icode(" )
             write(iCodeCount,5)
             printstring( "): " )
-            printstring( getiCodeName(iCodeInst) )
+            printstring( form iCode Name(iCodeInst) )
         %end { of "ListICode" }
 
         %include "machinecode.inc"
@@ -7674,7 +7749,7 @@ done:
             iCodeCount = iCodeCount + 1
 
             ! defend against illegal iCode instructions
-            %if (getiCodeName(iCodeInst)="ILLEGAL") %start
+            %if (form iCode Name(iCodeInst)="ILLEGAL") %start
                 select output(Report)
                 printsymbol('(')
                 write(iCodeInst, 0)
@@ -7751,14 +7826,14 @@ c(iCodeDEF):
                 spaces(4)
 
                 printsymbol( '(' )
-                printstring( " " . get own string( temp scope&7 ) )
-                printstring( " " . get type def( ( temp tf>>4), temp size ) )
-                printstring( " " . get external form name( temp tf&15 ) )
+                printstring( " " . form own string( temp scope&7 ) )
+                printstring( " " . form type def( ( temp tf>>4), temp size ) )
+                printstring( " " . form external form name( temp tf&15 ) )
                 { See if there are any flags set }
 
                 %if ((temp scope>>3)&31 # 0) %start
                     { Ok, flags were set so show them }
-                    printstring( " [" . get flags string( (temp scope>>3)&31 ) . "]" )
+                    printstring( " [" . form flags string( (temp scope>>3)&31 ) . "]" )
                 %finish
 
                 space

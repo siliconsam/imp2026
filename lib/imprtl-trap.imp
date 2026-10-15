@@ -12,7 +12,7 @@
 
 %constinteger trapsize = 4*integersize + 16*bytesize
 
-%own %record(imptrap) notrapinfo
+%own %record(imptrap) notrapinfo = 0
 
 %external %record(imptrap)  %spec trapbase %alias "_imptrapbase"
 %external %record(imptrap)  %spec traplimit  %alias "_imptraplimit"
