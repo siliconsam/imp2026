@@ -320,7 +320,7 @@
             s = s."@"
 
             ! 2) Don't forget the sign of the exponent
-            s = s."-" %if (exponent < 0)
+!            s = s."-" %if (exponent < 0)
 
             ! 3) append the exponent value as a string
             s = s.I to S(exponent,-1)
