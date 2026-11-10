@@ -16,11 +16,13 @@
     %external %string(15)  %function %spec form external form name( %integer form )
     %external %string(15)  %function %spec form internal form name( %integer form )
     %external %string(15)  %function %spec form ICode Name( %integer code )
+    %external %integer     %function %spec form ICode value( %string(15) s )
     %external %integer     %function %spec ReadTag
     %external %integer     %function %spec ReadTagComma
     %external %integer     %function %spec ReadInteger
     %external %integer     %function %spec ReadByte
     %external %longreal    %function %spec ReadReal
+    %external %longreal    %function %spec RealConstant
     %external %string(255) %function %spec ReadString
     %external %string(255) %function %spec Get Ascii( %integer terminator)
     %external %integer     %function %spec ReadICode

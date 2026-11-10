@@ -30,6 +30,7 @@ IMPRTL=imprtl-check.o \
      imprtl-main.o
 
 OBJS=prim-rtl-file.o \
+     fpinput.o \
      $(IOPRIMS) \
      $(IMPCORE) \
      $(IMPLIB) \

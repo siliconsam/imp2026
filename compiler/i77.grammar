@@ -369,7 +369,7 @@ COND    -> SCOND ((AND< SCOND)*, (OR< SCOND)*),
            EXP +
 
 SCOND  ->  (V, N) %SETTYPE (COMP %OTHER[2] EXP<[7] (COMP %OTHER[2] EXP<[7])?,
-                            ACOMP (V< %TYPE, N< %TYPE),
+                            ACOMP (V<, N<) %TYPE,
                             CRESOP %OTHER[1] RESEXP<[3],
                             (OP1 %OPER SEXP<[2])* &
                             (OP2 %OPER EXP1<[2])* &

@@ -217,7 +217,6 @@
     { GENERIC STORE ALIGNMENT - ASSUME 80386 }
     %constinteger  cAlign       = 3
 
-
     { size of each of those internal types in bytes }
     %constbyteintegerarray  vsize(0:15) =
         0,
@@ -1096,10 +1095,10 @@ at:
     { ---------------------------------------------------------------- }
     %routine  float monitor(%string(255) text)
 
-        select output(report)
-        print string(text)
-        print symbol(':')
-        newline
+!        select output(report)
+!        print string(text)
+!        print symbol(':')
+!        newline
 
         select output(Listing)
         print string(text)
@@ -4124,7 +4123,8 @@ out1:
         ! into the base register.
         %routine  Stack Var(%integer var no)
             %record(varfm)%name  w
-            %integer tf,type,form,scope
+            %integer tf,type,form
+            %integer scope
 
             Show Routine Call("STACK VAR") %if (diagnose&32 # 0)
 
@@ -4154,42 +4154,6 @@ out1:
                 monitor(top, "Pre-Var stack")
             %finish
 
-!            { Look out for %constant XXX %name variables        }
-!            { ((symbol tf)>>4)&15 = type, type not needed       }
-!            { (symbol tf)&15      = form, form = 2 => %name     }
-!            { symbol scope = 2                     => %constant }
-!
-!            { Get the var definition data }
-!            tf = get symbol tf( varno )&255
-!            scope = get symbol scope( varno )&255
-!
-!            type = (tf>>4)&15
-!            form = tf&15
-!
-!            %if (w_form = 2) %and (w_scope = 2) %start
-!                { we have found that this "PUSH" variable is a %constant %name }
-!                { but we don't know it's type, could be %record, %integer, ... }
-!                top_type = integer type
-!                top_form = constant
-!                top_scope = 0
-!                top_disp = w_disp
-!                top_size = w_size
-!            %finish %else %start
-!                { AFORM contains the real original declared form, while   }
-!                { FORM contains the on-the-stack subset of possible forms }
-!                top_aform = w_form
-!                top_form = fmap(w_form)
-!                top_dim = w_dim
-!                top_type = w_type
-!                top_disp = w_disp
-!                top_extdisp = w_disp
-!                top_scope = w_scope
-!                top_format = w_format
-!                top_size = w_size
-!                top_extra = w_extra
-!                top_pbase = w_pbase
-!            %finish
-
             { Look out for %constant XXX %name variables        }
             { ((symbol tf)>>4)&15 = type, type not needed       }
             { (symbol tf)&15      = form, form = 2 => %name     }
@@ -4213,7 +4177,6 @@ out1:
                 top_type = integer type
                 top_form = constant
                 top_scope = 0
-!                top_disp = w_disp
                 top_size = w_size
             %finish %else %start
                 { AFORM contains the real original declared form, while   }
@@ -7549,7 +7512,7 @@ done:
             Operation(opr)
             vmap(top)
             top_type = t
-        %end { of "DoubleOp" }
+        %end { of "Double Op" }
 
         ! >> SET DIAGNOSE <<
         %routine Set Diagnose(%integer Value)
@@ -7630,7 +7593,7 @@ done:
 
             decvar == procvar
             assemble(-2,labs,names)
-        %end { of "AlternateStart" }
+        %end { of "Alternate Start" }
 
         ! >> ALTERNATE NEXT <<
         %routine Alternate Next
@@ -7638,7 +7601,7 @@ done:
             ! Compile the next alternate - update limit and set frame back to where we started
             max frame = frame %if (frame > max frame)
             frame = old frame
-        %end { of "AlternateNext" }
+        %end { of "Alternate Next" }
 
         ! >> ALTERNAT FORMAT <<
         %predicate Alternate Format( %integer N )
@@ -7661,7 +7624,7 @@ done:
                 frame = old frame
             %finish
             %false
-        %end { of "AlternateFormat" }
+        %end { of "Alternate Format" }
 
         ! >> PLANT <<
         %routine  Plant
@@ -8124,7 +8087,8 @@ c(iCodeCOMPAREA):
 
 c(iCodePUSHR):
             ! Stack real constant
-            temp longreal = ReadReal
+!            temp longreal = ReadReal
+            temp longreal = Real Constant
 
             %if (dumpIcode # 0) %start
                 ListICode

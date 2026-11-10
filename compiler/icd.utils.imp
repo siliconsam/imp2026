@@ -335,11 +335,12 @@
     ! must be updated.
     %external %string(15) %function form ICode Name( %integer code )
         %string(15) s
+
         %label esac
         %switch c(0:255)
 
         -> c(code&255)
-        c(iCodeEOF):        s = "ENDOFFILE"; -> esac
+        c(iCodeEOF):        s = "EOF";       -> esac
         c(iCodeOR):         s = "OR";        -> esac
         c(iCodeCOMPARED):   s = "COMPARED";  -> esac
         c(iCodeJNE):        s = "JNE";       -> esac
@@ -422,19 +423,118 @@
 
         c(iCodeFINISH):     s = "FINISH";    -> esac
         c(iCodeALT):        s = "ALT";       -> esac
+
         c(*):               s = "ILLEGAL";   -> esac
         esac:
 
         %result = s
     %end
 
+    ! The individual name entries MUST match those in the disassemble routine
+    ! If the iCode language is extended/re-ordered then this routine
+    ! must be updated.
+    %external %integer %function form ICode value( %string(15) s )
+        %integer c
+        %label esac
+
+        c = 255
+        
+        %if (s = "EOF")       %then c = iCodeEOF       %and -> esac
+        %if (s = "OR")        %then c = iCodeOR        %and -> esac
+        %if (s = "COMPARED")  %then c = iCodeCOMPARED  %and -> esac
+        %if (s = "JNE")       %then c = iCodeJNE       %and -> esac
+        %if (s = "DEF")       %then c = iCodeDEF       %and -> esac
+        %if (s = "XOR")       %then c = iCodeXOR       %and -> esac
+        %if (s = "AND")       %then c = iCodeAND       %and -> esac
+        %if (s = "PUSHS")     %then c = iCodePUSHS     %and -> esac
+        %if (s = "JLE")       %then c = iCodeJLE       %and -> esac
+        %if (s = "JGE")       %then c = iCodeJGE       %and -> esac
+        %if (s = "MUL")       %then c = iCodeMUL       %and -> esac
+        %if (s = "ADD")       %then c = iCodeADD       %and -> esac
+        %if (s = "SUB")       %then c = iCodeSUB       %and -> esac
+        %if (s = "CONCAT")    %then c = iCodeCONCAT    %and -> esac
+        %if (s = "QUOT")      %then c = iCodeQUOT      %and -> esac
+        %if (s = "LOCATE")    %then c = iCodeLOCATE    %and -> esac
+        %if (s = "END")       %then c = iCodeEND       %and -> esac
+        %if (s = "JL")        %then c = iCodeJL        %and -> esac
+        %if (s = "JE")        %then c = iCodeJE        %and -> esac
+        %if (s = "JG")        %then c = iCodeJG        %and -> esac
+        %if (s = "COMPARE")   %then c = iCodeCOMPARE   %and -> esac
+        %if (s = "PUSH")      %then c = iCodePUSH      %and -> esac
+        %if (s = "INIT")      %then c = iCodeINIT      %and -> esac
+        %if (s = "REPEAT")    %then c = iCodeREPEAT    %and -> esac
+        %if (s = "COMPAREA")  %then c = iCodeCOMPAREA  %and -> esac
+        %if (s = "PUSHR")     %then c = iCodePUSHR     %and -> esac
+        %if (s = "CALL")      %then c = iCodeCALL      %and -> esac
+        %if (s = "GOTO")      %then c = iCodeGOTO      %and -> esac
+        %if (s = "ALIAS")     %then c = iCodeALIAS     %and -> esac
+        %if (s = "BEGIN")     %then c = iCodeBEGIN     %and -> esac
+
+        %if (s = "JUMP")      %then c = iCodeJUMP      %and -> esac
+        %if (s = "FALSE")     %then c = iCodeFALSE     %and -> esac
+        %if (s = "LABEL")     %then c = iCodeLABEL     %and -> esac
+        %if (s = "MAP")       %then c = iCodeMAP       %and -> esac
+        %if (s = "PUSHI")     %then c = iCodePUSHI     %and -> esac
+        %if (s = "LINE")      %then c = iCodeLINE      %and -> esac
+        %if (s = "PLANT")     %then c = iCodePLANT     %and -> esac
+        %if (s = "DIVIDE")    %then c = iCodeDIVIDE    %and -> esac
+        %if (s = "RETURN")    %then c = iCodeRETURN    %and -> esac
+        %if (s = "ASSVAL")    %then c = iCodeASSVAL    %and -> esac
+        %if (s = "TRUE")      %then c = iCodeTRUE      %and -> esac
+        %if (s = "NEGATE")    %then c = iCodeNEGATE    %and -> esac
+        %if (s = "RESULT")    %then c = iCodeRESULT    %and -> esac
+        %if (s = "SJUMP")     %then c = iCodeSJUMP     %and -> esac
+        %if (s = "IEXP")      %then c = iCodeIEXP      %and -> esac
+
+        %if (s = "ASSREF")    %then c = iCodeASSREF    %and -> esac
+        %if (s = "LSH")       %then c = iCodeLSH       %and -> esac
+        %if (s = "NOT")       %then c = iCodeNOT       %and -> esac
+        %if (s = "RSH")       %then c = iCodeRSH       %and -> esac
+        %if (s = "SETFORMAT") %then c = iCodeSETFORMAT %and -> esac
+        %if (s = "SLABEL")    %then c = iCodeSLABEL    %and -> esac
+        %if (s = "ACCESS")    %then c = iCodeACCESS    %and -> esac
+        %if (s = "BOUNDS")    %then c = iCodeBOUNDS    %and -> esac
+        %if (s = "ALTNEXT")   %then c = iCodeALTNEXT   %and -> esac
+        %if (s = "DIM")       %then c = iCodeDIM       %and -> esac
+        %if (s = "EVENT")     %then c = iCodeEVENT     %and -> esac
+        %if (s = "FOR")       %then c = iCodeFOR       %and -> esac
+        %if (s = "ALTSTART")  %then c = iCodeALTSTART  %and -> esac
+        %if (s = "ALTEND")    %then c = iCodeALTEND    %and -> esac
+        %if (s = "INDEX")     %then c = iCodeINDEX     %and -> esac
+        %if (s = "JAM")       %then c = iCodeJAM       %and -> esac
+        %if (s = "JZ")        %then c = iCodeJZ        %and -> esac
+        %if (s = "LANG")      %then c = iCodeLANG      %and -> esac
+        %if (s = "MONITOR")   %then c = iCodeMONITOR   %and -> esac
+        %if (s = "SELECT")    %then c = iCodeSELECT    %and -> esac
+        %if (s = "ON")        %then c = iCodeON        %and -> esac
+        %if (s = "ASSPAR")    %then c = iCodeASSPAR    %and -> esac
+        %if (s = "SUBA")      %then c = iCodeSUBA      %and -> esac
+        %if (s = "RESOLVE")   %then c = iCodeRESOLVE   %and -> esac
+        %if (s = "STOP")      %then c = iCodeSTOP      %and -> esac
+        %if (s = "JNZ")       %then c = iCodeJNZ       %and -> esac
+        %if (s = "ADDA")      %then c = iCodeADDA      %and -> esac
+        %if (s = "MOD")       %then c = iCodeMOD       %and -> esac
+        %if (s = "MCODE")     %then c = iCodeMCODE     %and -> esac
+        %if (s = "REXP")      %then c = iCodeREXP      %and -> esac
+        %if (s = "DIAG")      %then c = iCodeDIAG      %and -> esac
+        %if (s = "CONTROL")   %then c = iCodeCONTROL   %and -> esac
+        %if (s = "START")     %then c = iCodeSTART     %and -> esac
+
+        %if (s = "FINISH")    %then c = iCodeFINISH    %and -> esac
+        %if (s = "ALT")       %then c = iCodeALT       %and -> esac
+
+        esac:
+
+        %result = c
+    %end
+
     ! The following functions "parse" an iCode instructions' parameters
     ! These functions are the only places where the iCode stream is read
-    !                                                      >> TAG <<
-    !                                                      >> TAG+COMMA <<
-    !                                                      >> INTEGER <<
-    !                                                      >> BYTE <<
-    !                                                      >> REAL <<
+    ! >> TAG <<
+    ! >> TAG+COMMA <<
+    ! >> INTEGER <<
+    ! >> BYTE <<
+    ! >> REAL <<
     %external %integer %function  ReadTag
         %integer s1, s2
         s1 = Pending
@@ -467,13 +567,14 @@
         %result = s1
     %end
 
-    !                                                      >> READ REAL <<
+    ! >> READ REAL <<
     ! Read a floating point literal.  Pass 1 treats these as strings
     ! and leaves it up to us to make a floating point number out of it
     ! We therefore expect [COUNT]NNN.NNN@NN
-    %external %longreal %function  ReadReal
+    %external %longreal %function ReadReal
         %integer n,sym
         %longreal p, r
+
         n = ReadTagComma;	! char count, skip comma
 
         r = 0
@@ -552,6 +653,59 @@ POWER:
             %finish
         %finish
 SIGN:
+        ! sign of whole value
+        %if (Pending = 'U') %start
+            read symbol(Pending)
+            r = -r
+        %finish
+
+        %result = r
+    %end
+
+    ! >> REAL CONSTANT <<
+    ! Read a floating point literal.  Pass 1 treats these as strings
+    ! and leaves it up to us to make a floating point number out of it
+    ! Format of string is usually [COUNT]NNN.NNN@NN
+    ! But some strings use different number bases
+    ! eg 8_12_16_ABCD@1
+    ! eg 8_0.55@1 => ((5/8 + 5/8^2)) * (8^1) = 5 + 5/8 = 5.625 (base 10)
+    %external %longreal %function Real Constant
+
+        %externallongrealfnspec Text to Floating(%string(255) S, %integer Exp)
+
+        %integer i,n
+        %string(255) s
+        %integer exp
+        %longreal r
+
+!        %on 1,4 %start
+!            %if Event_Event = 1 %start
+!                User Error("overflow while processing real constant")
+!            %else %if Event_Event=4
+!                Fail("error in real constant")
+!            %else
+!                Fail("bad signal")
+!            %finish
+!        %finish
+ 
+        n = ReadTagComma;	! char count, skip comma
+
+        s = ""
+        exp = 0
+        ! Start reading the float literal string
+         %for i = 1, 1, n %cycle        { Grab the non-exponent part into S }
+            %if (Pending = '@') %start  { found the exponent marker }
+               Readsymbol(Pending)      { skip the '@' }
+               Exp = ReadTag            { exponent is 16 bits }
+               Exp = Exp!16_FFFF8000 %if Exp&16_FFFF8000 # 0
+               %exit
+            %finish
+            S = S.Tostring(Pending)
+            Readsymbol(Pending)
+         %repeat
+
+        r = Text to Floating( s, exp )
+
         ! sign of whole value
         %if (Pending = 'U') %start
             read symbol(Pending)

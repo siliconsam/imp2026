@@ -73,9 +73,9 @@
     %constinteger max dict     = 10000     { max extent of dictionary }
     %constinteger name bits    = 11        { name table size as a power of 2 }
     %constinteger max names    = 1<<namebits-1 { table limit as mask, eg 255 }
-    %constinteger lit max      = 60        { max no. of constants/stat. }
+    %constinteger max lit      = 60        { max no. of constants/stat. }
     %constinteger rec size     = 1000      { size of analysis record }
-    %constinteger dim limit    = 6         { maximum array dimension }
+    %constinteger max dim      = 6         { maximum array dimension }
 
     { symbols }
     %constinteger ff     = 12              { form feed }
@@ -84,13 +84,13 @@
     %constinteger cquote = ''''            { character quote }
 
     { types }
-    %constinteger integer = 1
-    %constinteger real    = 2
-    %constinteger stringv = 3
-    %constinteger record  = 4
+    %constinteger integer type = 1
+    %constinteger real type    = 2
+    %constinteger string type  = 3
+    %constinteger record type  = 4
 
     { forms }
-    %constinteger iform   = integer<<4+1
+    %constinteger iform   = integer type<<4+1
     %constinteger lab     = 3
     %constinteger recfm   = 4
     %constinteger proc    = 7   { PROC"       class for proc    }
@@ -112,19 +112,19 @@
     %recordformat tagfm(%integer app, format,
                         %shortinteger flags, index, text, link)
 
-    { flags                                                       }
-    {      *===.===.===.===.===.====.====.====.===.======.======* }
-    {      ! u ! c ! c ! p ! s ! a  ! o  ! pr ! s ! type ! form ! }
-    {      ! 1 ! 1 ! 1 ! 1 ! 1 ! 1  ! 1  ! 1  ! 1 !  3   !  4   ! }
-    {      *===^===^===^===^===^====^====^====^===^======^======* }
-    {        u   c   c   p   s   a    o    p    s    t      f     }
-    {        s   l   o   a   u   n    w    r    p    y      o     }
-    {        e   o   n   r   b   a    n    o    e    p      r     }
-    {        d   s   s   a   n   m         t    c    e      m     }
-    {            e   t   m   a   e                                }
-    {            d       s   m                                    }
-    {                        e                                    }
-    {                                                             }
+    { flags                                         }
+    { *===.===.===.===.===.===.===.===.===.===.===* }
+    { ! 1 ! 1 ! 1 ! 1 ! 1 ! 1 ! 1 ! 1 ! 1 ! 3 ! 4 ! }
+    { !===!===!===!===!===!===!===!===!===!===!===! }
+    { ! u ! c ! c ! p ! s ! a ! o ! p ! s ! t ! f ! }
+    { ! s ! l ! o ! a ! u ! n ! w ! r ! p ! y ! o ! }
+    { ! e ! o ! n ! r ! b ! a ! n ! o ! e ! p ! r ! }
+    { ! d ! s ! s ! a ! n ! m !   ! t ! c ! e ! m ! }
+    { !   ! e ! t ! m ! a ! e !   !   !   !   !   ! }
+    { !   ! d !   ! s ! m !   !   !   !   !   !   ! }
+    { !   !   !   !   ! e !   !   !   !   !   !   ! }
+    { *===^===^===^===^===^===^===^===^===^===^===* }
+    {                                               }
 
     %constshort used bit   = b'1000000000000000'
     %constshort closed     = b'0100000000000000'
@@ -163,7 +163,6 @@
     %owninteger sym          = nl         { current input symbol }
     %owninteger symtype      = 0          { type of current symbol }
     %owninteger quote        = 0          { >0 strings, <0 chars }
-    %owninteger end mark     = 0          { %end flag }
     %owninteger cont         = ' '
     %owninteger csym         = ' '        { listing continuation marker }
     %owninteger decl         = 0          { current declarator flags }
@@ -223,7 +222,7 @@
     %owninteger format list  = 0          { size of current format list }
     %integer recid
     %ownbyteintegerarray char(0:133) = nl(134)  { input line }
-    %integerarray lit pool(0:lit max)
+    %integerarray lit pool(0:max lit)
     %owninteger lit          = 0          { current literal (integer) }
     %owninteger lp           = 0          { literals pointer }
     %owninteger block x      = 0          { block tag }
@@ -236,6 +235,11 @@
     %shortintegerarray hash(0:max names)
     %record(tagfm)%array tag(0:max tag)
     %integerarray dict(1:max dict)
+
+    %recordformat impcomfm(%integer statements, flags, code, gla, diags, perm,
+                            %string(31) file,
+                            %string(63) Option)
+    %record(impcomfm) IMPCOM = 0
 
     %recordformat subtagfm(%string(255) name, %shortinteger format, flags, index )
 
@@ -252,11 +256,12 @@
     %constinteger actions    = 180
     %constinteger phrasal    = 200
 
+    { definitions of iCode values used by pass1 and pass2 }
+    %include "icd.types.inc"
+
     { various icode utility functions }
     %include "icd.utils.inc"
 
-    { definitions of iCode values used by pass1 and pass2 }
-    %include "icd.types.inc"
     { definition of icode buffer routines }
     %include "buffer.inc"
 
@@ -398,9 +403,8 @@ more:       newline
             select output(report)
         %repeat
 
-        { %signal 14,15 %if (diag&4096 # 0) }
+        { %stop the program }
         %signal 0,-1,n
-!        %stop
     %end { of "abandon" }
 
     %routine set const(%integer m)
@@ -780,10 +784,7 @@ esac:
                     write(a, 0)
                     printsymbol('}')
                 %finish
-                %if (atom1 # la1) %or
-                    (atom2 # la2) %or 
-                    (lsa # subatom) %or
-                    (lt # type) %start
+                %if (atom1 # la1) %or (atom2 # la2) %or (lsa # subatom) %or (lt # type) %start
                     printstring(" [")
                     la1 = atom1
                     show(la1)
@@ -836,14 +837,12 @@ esac:
 
                 %if (sym = nl) %start
 s1:                 lines = lines+1
-                    printsymbol(end mark) %if (end mark # 0)
 s11:                pos = 0
                     pos1 = 0
                     pos2 = 0
                     margin = 0
                     column = 0
                     Last = 0
-                    end mark = 0
                     %if (list <= 0) %start
                         %if (include # 0) %start
                             printstring(" &")
@@ -867,7 +866,7 @@ s11:                pos = 0
                             %finish
                         %finish
                     %finish
-s2:                 symtype = 1
+                    symtype = 1
                 %finish
 
 s3:             readsymbol(sym)
@@ -881,7 +880,7 @@ s5:             %if (sym # nl) %start
                     %return %if (quote # 0)                     { dont alter strings }
                     sym = mapped(sym&127)
                     %if (sym <= 3) %start                       { special symbol }
-                        ->s2 %if (sym = 0)                      { space (or dubious control) }
+                        symtype = 1 %and ->s3 %if (sym = 0)     { space (or dubious control) }
                         symtype = 2 %and ->s3 %if (sym = 1)     { % }
                         cont = '+' %and ->s11 %if (sym = 3)     { ff }
                         { must be '{' }
@@ -891,9 +890,10 @@ s5:             %if (sym # nl) %start
                             ->s4 %if (sym = nl)
                         %repeat
                     %finish
+
                     key = kdict(sym)
                     %if (key&3 = 0) %and (symtype = 2) %start          { keyword }
-                        %if ((sym = 'C') %or (sym = 'c')) %and (nextsymbol = nl) %start  { %c... }
+                        %if (sym = 'C') %and (nextsymbol = nl) %start  { %c... }
                             getsym
                             cont = '+'
                             ->s1
@@ -904,6 +904,7 @@ s5:             %if (sym # nl) %start
                     %finish
                     %return
                 %finish
+
 s4:             symtype = quote
                 ->s1 %if (last = 0) %and (Quote = 0)
                 Cont = '+'
@@ -1027,7 +1028,7 @@ in:                 search base = rbase %if (this >= 0) %and (d # 0)  { record e
                         %if (atom flags&const bit # 0) %and (atom1 = var) %start
                             map gg = const
                             atom2 = const
-                            subatom = -subatom %if (type = integer)
+                            subatom = -subatom %if (type = integer type)
                         %finish
                         %return
                     %finish
@@ -1055,7 +1056,7 @@ in:                 search base = rbase %if (this >= 0) %and (d # 0)  { record e
                         %finish
 
                         %if (decl&15 = recfm) %start  { recordformat }
-                            t_flags = record<<4+recfm
+                            t_flags = record type<<4+recfm
                             t_format = fdef
                             %return
                         %finish
@@ -1150,7 +1151,7 @@ notin:              app = 0
                                 { too big for an integer, }
                                 { so call it a real }
                                 base = 0
-                                type = real
+                                type = real type
                                 n = 0
                             %finish
                         %finish
@@ -1239,11 +1240,11 @@ err:            atom1 = error+1
 
 symbols:        atom1 = var
                 atom2 = const
-                type = integer
+                type = integer type
                 map gg = const
                 protection = prot
                 subatom = lp
-                abandon(3) %if (lp >= lit max)
+                abandon(3) %if (lp >= max lit)
                 quote = \pend quote
                 %return
 
@@ -1276,7 +1277,7 @@ chars:          n = 0
                 { sniff the grammar before getting the string }
 strings:        atom1 = var
                 atom2 = const
-                type = stringv
+                type = string type
                 subatom = strp!x'4000'
                 map gg = const
                 protection = prot
@@ -1334,11 +1335,11 @@ text:           ->chars %if (quote < 0)      { character consts }
 number:         base = 10
 bxk:            atom1 = var
                 atom2 = const
-                type = integer
+                type = integer type
                 subatom = lp
                 map gg = const
                 protection = prot
-                abandon(3) %if (lp >= lit max)
+                abandon(3) %if (lp >= max lit)
                 pt = strp
                 mul = 0
                 %cycle
@@ -1358,7 +1359,7 @@ bxk:            atom1 = var
                     pt = pt+1
                     glink(pt) = '.'
                     read sym
-                    type = real
+                    type = real type
                     n = base
                     base = 0
                     get(n)
@@ -1369,7 +1370,7 @@ bxk:            atom1 = var
                     glink(pt) = '@'
                     k = pt
                     readsym
-                    type = integer
+                    type = integer type
                     base = 10
                     %if (sym = '-') %start
                         read sym
@@ -1383,10 +1384,10 @@ bxk:            atom1 = var
                     litpool(lp) = n
                     lp = lp+1
                     atom1 = error+10 %if (base = 0)
-                    type = real     { exponents force the type }
+                    type = real type     { exponents force the type }
                 %finish
 
-                %if (type = real) %start
+                %if (type = real type) %start
                     glink(strp) = pt-strp   { store the length (difference) }
                     subatom = (strp)!x'2000'
                     strp = pt+1
@@ -1399,34 +1400,45 @@ bxk:            atom1 = var
 name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                 hash value = 0
 
-                {*****************************}
-                {*machine dependent for speed*}
-                {*****************************}
+                {*******************************}
+                {* machine dependent for speed *}
+                {*******************************}
 
-                dp = dmax+1
-                da = addr(dict(dp))
-                dbase = da
                 { prepare the dict array to add an ident string }
-                dict(dp) = 0
+                dbase = addr(dict(dmax+1)); n = 0
+                da = dbase
+
+                dp = dmax
+                dp = dp + 1; dict(dp) = 0
+
                 %cycle
                     hash value = hash value+(hash value+sym)    { is this good enough? }
                     { add the 4x+1 numbered sym char to the dict }
-                    da = da+1; dict(dp) = dict(dp) ! (sym << 8)
+                    n = n + 1
+                    dict(dp) = dict(dp) ! (sym << 8)
+!                    byteinteger(dbase+n) = sym&255
                     read sym; %exit %if (symtype >= 0)
 
                     { add the 4x+2 numbered sym char to the dict }
-                    da = da+1; dict(dp) = dict(dp) ! (sym << 16)
+                    n = n + 1
+                    dict(dp) = dict(dp) ! (sym << 16)
+!                    byteinteger(dbase+n) = sym&255
                     read sym; %exit %if (symtype >= 0)
 
                     { add the 4x+3 numbered sym char to the dict }
-                    da = da+1; dict(dp) = dict(dp) ! (sym << 24)
-                    dp = dp + 1
+                    n = n + 1
+                    dict(dp) = dict(dp) ! (sym << 24)
+!                    byteinteger(dbase+n) = sym&255
+                    dp = dp + 1; dict(dp) = 0
                     read sym; %exit %if (symtype >= 0)
 
                     { add the 4x+4 numbered sym char to the dict }
-                    da = da+1; dict(dp) = sym
+                    n = n + 1
+                    dict(dp) = sym
+!                    byteinteger(dbase+n) = sym&255
                     read sym; %exit %if (symtype >= 0)
                 %repeat
+
                 %if (sym = cquote) %start
                     pend quote = 100
                     ->symbols %if (hash value = 'M')
@@ -1437,8 +1449,8 @@ name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                     %if (hash value = 'B') %then base =  2 %and ->bxk
                     ->err
                 %finish
+
                 { Add the identifier string char count }
-                n = da-dbase
                 byteinteger(dbase) = n
                 { skip over this dict entry if at a 4x+0,4x+1,4x+2 numbered char }
                 dp = dmax+1+(n+4)>>2
@@ -1486,7 +1498,7 @@ name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                             { complex }
                             code atom(0)
                             %false %if (atom1&error # 0)
-                            %if (atom2 = const) %and (type = integer) %start
+                            %if (atom2 = const) %and (type = integer type) %start
                                 %if (subatom < 0) %then set const(tag(-subatom)_format) %else set const(litpool(subatom))
                             %finish %else %if (91 <= atom1 <= 109) %start
                                 %if (atom1 = 104) { label } %and (tag(subatom)_flags&closed = 0) %start
@@ -1632,12 +1644,12 @@ a610:       papp = glink(k)
             pformat = k>>3
 act(183):   { %TYPE [2 - check operand type] }
             k = type
-            gentype = k %if (gentype = 0) %or (k = real)
+            gentype = k %if (gentype = 0) %or (k = real type)
             %if (pformat < 0) %start
                 { general type }
                 app = papp
                 format = pformat
-                k = real %if (ptype = real) %and (type = integer)
+                k = real type %if (ptype = real type) %and (type = integer type)
                 k = force %and force = 0 %if (force # 0)
             %finish
             ->fail2 %unless (papp = app) %and ((ptype = k) %or (ptype = 0))
@@ -1653,11 +1665,11 @@ act(197):   { %BLOCK [7 - check block type] }
             ptype = block type
             pformat = block fm
             papp = app
-            pformat = -1 %if (ptype # record)
+            pformat = -1 %if (ptype # record type)
             ->more
 
 act(195):   { %OPER [8 - check operator type] }
-            ->Fail2 %if (Type # 0) %and (Type # integer) %and (Type # Real)
+            ->Fail2 %if (Type # 0) %and (Type # integer type) %and (Type # real type)
             arp == ar(nmin)
             k = arp_sub
             arp_sub = k>>2
@@ -1667,13 +1679,13 @@ act(195):   { %OPER [8 - check operator type] }
                                     { 3 = check real + int }
             ->more %if (k = 0)      { 0 = no action }
             %if (k = 1) %start
-                force = integer
-                ->more %if (type = integer) %or (type = 0)
+                force = integer type
+                ->more %if (type = integer type) %or (type = 0)
                 ->fail2
 
             %finish
-            ->fail2 %unless (ptype = real) %or (ptype = 0)  { or added? }
-            force = integer %if (k = 3)
+            ->fail2 %unless (ptype = real type) %or (ptype = 0)  { or added? }
+            force = integer type %if (k = 3)
             ->more
 
 act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
@@ -1684,12 +1696,12 @@ act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
 
             %finish
             %if (k = 1) %start      { test string }
-                ->fail2 %unless (type = stringv)
+                ->fail2 %unless (type = string type)
                 ->more
 
             %finish
             %if (k = 2) %start      { fault record comparisons }
-                ->fail2 %if (type = record)
+                ->fail2 %if (type = record type)
                 ->more
 
             %finish
@@ -1704,30 +1716,30 @@ act(198):   { %OTHER [0,1,2,3,4 - sundry others] }
             ->more
 
 paction(1): {RECEXP (= 242) check for record exp }
-            %if (type = record) %then g = phrase(242) %else pformat = -1
+            %if (type = record type) %then g = phrase(242) %else pformat = -1
             ->a3
 
 paction(2): { set numerical ptype }
-            ptype = real
+            ptype = real type
             pformat = -1
             ->a3
 
 paction(3): { set string type }
-            ptype = stringv
+            ptype = string type
             pformat = -1
             ->a3
 
 paction(4): { set integer type }
-            ptype = integer
+            ptype = integer type
             pformat = -1
             ->a3
 
 paction(5): { set const type }
-            ->a3 %if (ptype = integer)
+            ->a3 %if (ptype = integer type)
             { 212 RCONST }
-            g = phrase(212) %and pformat=-1 %if (ptype = real)
+            g = phrase(212) %and pformat=-1 %if (ptype = real type)
             { 213 SCONST }
-            g = phrase(213) %if (ptype = stringv)
+            g = phrase(213) %if (ptype = string type)
             ->a3
 
 paction(6): { set next }
@@ -1736,7 +1748,7 @@ paction(6): { set next }
             ->a3
 
 paction(7): { generalise cond exps }
-            ptype=real %if (ptype = integer)
+            ptype=real type %if (ptype = integer type)
             pformat = -1
             ->a3
 
@@ -1846,7 +1858,7 @@ a6:         %if (nmax # 0) %start
                     ->a3
 
                 %finish
-                gentype = k %if (gentype = 0) %or (k = real)
+                gentype = k %if (gentype = 0) %or (k = real type)
                 type = gen type
 
                 k = gg                              { exit-point code }
@@ -1896,7 +1908,7 @@ act(199):   { %COMPILE [compile phrase] }
             ->fail1
 
 act(184):   { %ZERO [check record=0] }
-            ->fail4 %unless (type = integer)
+            ->fail4 %unless (type = integer type)
             %if (subatom < 0) %then lit = tag(-subatom)_format %c
                               %else lit = lit pool(subatom)
             ->fail4 %if (lit # 0)
@@ -2174,9 +2186,6 @@ gn:             %if (next = 0) %start                       { end of phrase }
                 %finish %else %if (level = 0) %start
                     fault(15)                           { spurious end }
                 %finish
-
-                end mark = 0                { IMP2026 }
-!                end mark = 11               { ******Mouses specific****** }
             %end { of "compile end" }
 
             { dump a descriptor }
@@ -2200,13 +2209,13 @@ gn:             %if (next = 0) %start                       { end of phrase }
                 type = type&(\(7<<4)) %if (type&(7<<4) >= 6<<4) { routine & pred }
                 append tag(type&b'1111111')                     { type & form }
                 f = v_format
-                f = tag(f)_index %if (t&x'70' = record<<4)
+                f = tag(f)_index %if (t&x'70' = record type<<4)
                 f = v_index %if (f < 0)
                 append tag(f)                   { format }
                 f = otype+t>>4&b'1111000'
                 f = f!8 %if (class = 125)       { add spec from %DUP }
                 dim = v_app                     { dimension }
-                dim = 0 %unless (0 < dim <= dim limit)
+                dim = 0 %unless (0 < dim <= max dim)
                 append tag(f+dim<<8)            { otype & spec & prot }
                 defs = 0 %if (t&parameters = 0)
                 f = t&15
@@ -2350,7 +2359,7 @@ top:        %if (next # link) %start
             atom1 = atom1+1 %if (decl&spec # 0)         { onto spec variant }
             ocount = 0 %and cont = '+' %if (atom1 = 5)  { own array }
             %if (anyform(decl&15) = 0) %start           { check meaningful }
-                %if (decl>>4&7 = record) %start
+                %if (decl>>4&7 = record type) %start
                     this = fdef %if (tag(fdef)_flags&spec # 0)
                     atom1 = error+21 %if (fdef = this)  { *context for format }
                 %finish
@@ -2367,7 +2376,7 @@ c(88):      { RTYPE }
 c(28):      { STYPE }
             decl = x&(\7)
             fdef = x&7                                      { precision }
-            fdef = reals ln %if (x&b'1110001' = real<<4+1)  { convert to long }
+            fdef = reals ln %if (x&b'1110001' = real type<<4+1)  { convert to long }
             decs = 1
             ->top
 
@@ -2397,7 +2406,7 @@ c(27):      { ARRAYD }
             lit = 0
             %if (pending # 0) %start
                 pop lit
-                %unless (0<lit<=dim limit) %start
+                %unless (0 < lit <= max dim) %start
                     atom1 = error + 11
                     %return
                 %finish
@@ -2767,7 +2776,7 @@ c(86):      { INCLUDE }
 
 c(154):     { DBSEP }
             dimension = dimension+1
-            fault(11) %if (dimension = dim limit+1)
+            fault(11) %if (dimension = max dim + 1)
             ->top
 
 c(145):     { CRB }
@@ -3055,8 +3064,12 @@ c(161):     { COP3 }
             ->litop(x>>2)
 
 c(170):     { OSTRING }
-            !Fault(4) %if IMPCOM_Option # ""
+            Fault(4) %if IMPCOM_Option # ""
             !IMPCOM_Option = String(x-x'4000'+Stbase); ! Option string
+
+            IMPCOM_option = String(addr(glink(x-x'4000')))
+
+            x = x - x'4000' + (length(IMPCOM_option) + 1)>>1
             ->top
 
             { string resolution }
@@ -3250,13 +3263,24 @@ SetLit:     pstack(pending) = lit
         %if (faulty = 0) %start
             write(stats, 5)
             printstring(" Statements compiled")
+            newline
+
+            %if (IMPCOM_option # "") %start
+                newline
+                spaces(7)
+                printstring( "Option = ")
+                printsymbol('''')
+                printstring(IMPCOM_option)
+                printsymbol('''')
+                newline
+            %finish
         %else
             printstring(" Program contains ")
             write(faulty, 1)
             printstring(" fault")
             printsymbol('s') %unless faulty = 1
+            newline
         %finish
-        newline
         %exit %if x = report
         x = report
         selectoutput(report)
