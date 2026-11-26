@@ -43,7 +43,7 @@
 {      2) has 32-bit and 8-bit arithmetic instructions         }
 {      3) base address byte holds the least significant byte   }
 
-%externalstring(15) P1 Version = "8.4-2026.03.14"
+%externalstring(15) P1 Version = "8.4-2026.11.26"
 
 ! This source file is using the IMP: mechanism to determine the folder
 ! containing the requested include file
@@ -799,23 +799,14 @@ esac:
                 newline
             %end { of "trace analysis" }
 
-            %routine get sym
-                readsymbol(sym)
-                abandon(5) %if (sym < 0)
-                pos = pos+1 %if (pos # 133)
-                char(pos) = sym
-                printsymbol(sym) %if (list <= 0)
-                column = column+1
-            %end { of "get sym" }
-
             %routine read sym
                 %owninteger last = 0
                 %constbyteintegerarray mapped(0:127) = %c
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,  nl,   0,   3,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                  0,   0,   0,   0,   0,   0,   0,   0,
-                  0, '!', '"', '#', '$',   1, '&',  39,
+                 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
+                 0 ,  0 ,  nl,  0 ,  3 ,  0 ,  0 ,  0 ,
+                 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
+                 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
+                 0 , '!', '"', '#', '$',  1 , '&', 39 ,
                 '(', ')', '*', '+', ',', '-', '.', '/',
                 '0', '1', '2', '3', '4', '5', '6', '7',
                 '8', '9', ':', ';', '<', '=', '>', '?',
@@ -826,7 +817,7 @@ esac:
                 '`', 'A', 'B', 'C', 'D', 'E', 'F', 'G',
                 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
                 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
-                'X', 'Y', 'Z',   2, '|', '}', '~',   0
+                'X', 'Y', 'Z',  2 , '|', '}', '~',  0
 
                 {   0 = space                         }
                 {   1 = %                             }
@@ -835,79 +826,133 @@ esac:
                 {   other values represent themselves }
                 {   39 = ''''                         }
 
-                %if (sym = nl) %start
-s1:                 lines = lines+1
-s11:                pos = 0
-                    pos1 = 0
-                    pos2 = 0
-                    margin = 0
-                    column = 0
-                    Last = 0
-                    %if (list <= 0) %start
-                        %if (include # 0) %start
-                            printstring(" &")
-                            write(lines, -4)
-                        %finish %else  write(lines, 5)
-                        csym = cont
-                        printsymbol(csym)
-                        space
-                        %if (error margin # 0) %start
-                            lines = lines-1
-                            spaces(error margin)
-                            error margin = 0
-                            %if (error sym # 0) %start
-                                printsymbol(error sym)
-                                pos = 1
-                                char(1) = error sym
-                                sym = error sym
-                                error sym = 0
-                                ->s5
+                %routine get sym
+                    readsymbol(sym)
+                    abandon(5) %if (sym < 0)
+                    pos = pos+1 %if (pos # 133)
+                    char(pos) = sym
+                    printsymbol(sym) %if (list <= 0)
+                    column = column+1
+                %end { of "get sym" }
 
+                %routine nl getsym
+                    %if (sym = nl) %start
+                        lines = lines+1
+                        pos = 0
+                        pos1 = 0
+                        pos2 = 0
+                        margin = 0
+                        column = 0
+                        last = 0
+                        %if (list <= 0) %start
+                            %if (include # 0) %start
+                                printstring(" &")
+                                write(lines, -4)
+                            %finish %else  write(lines, 5)
+                            csym = cont
+                            printsymbol(csym)
+                            space
+                            %if (error margin # 0) %start
+                                lines = lines-1
+                                spaces(error margin)
+                                error margin = 0
+                                %if (error sym # 0) %start
+                                    sym = error sym
+                                    error sym = 0
+                                    pos = 0
+                                    column = -1
+
+                                    pos = pos+1 %if (pos # 133)
+                                    char(pos) = sym
+                                    printsymbol(sym)
+                                    column = column+1
+                                    %return
+
+                                %finish
                             %finish
                         %finish
+                        symtype = 1
                     %finish
-                    symtype = 1
-                %finish
 
-s3:             readsymbol(sym)
-                abandon(5) %if (sym < 0)
-                pos = pos+1 %if (pos # 133)
-                char(pos) = sym
-                printsymbol(sym) %if (list <= 0)
-                column = column+1
-s5:             %if (sym # nl) %start
-                    last = sym
-                    %return %if (quote # 0)                     { dont alter strings }
-                    sym = mapped(sym&127)
-                    %if (sym <= 3) %start                       { special symbol }
-                        symtype = 1 %and ->s3 %if (sym = 0)     { space (or dubious control) }
-                        symtype = 2 %and ->s3 %if (sym = 1)     { % }
-                        cont = '+' %and ->s11 %if (sym = 3)     { ff }
-                        { must be '{' }
-                        %cycle
+                    readsymbol(sym)
+                    abandon(5) %if (sym < 0)
+                    pos = pos+1 %if (pos # 133)
+                    char(pos) = sym
+                    printsymbol(sym) %if (list <= 0)
+                    column = column+1
+                %end
+
+                nl getsym
+
+                %cycle
+                    %if (sym # nl) %start
+                        last = sym
+                        %return %if (quote # 0) { dont alter strings }
+
+                        sym = mapped(sym&127)
+                        { First check for special symbols }
+                        %if (sym = 0) %start    { space/dubious control symbol }
+                            symtype = 1
                             get sym
-                            ->s3 %if (sym = '}')
-                            ->s4 %if (sym = nl)
-                        %repeat
-                    %finish
-
-                    key = kdict(sym)
-                    %if (key&3 = 0) %and (symtype = 2) %start          { keyword }
-                        %if (sym = 'C') %and (nextsymbol = nl) %start  { %c... }
-                            getsym
-                            cont = '+'
-                            ->s1
-
+                            %continue
                         %finish
-                    %else
-                        symtype = key&3-2
-                    %finish
-                    %return
-                %finish
+                        %if (sym = 1) %start  { % symbol }
+                            symtype = 2
+                            get sym
+                            %continue
+                        %finish
+                        %if (sym = 2) %start  { '{' symbol }
+                            %cycle
+                                get sym
+                            %repeat %until (sym = '}') %or (sym = nl)
+                            %if (sym = '}') %start
+                                get sym
+                                %continue
+                            %finish
+                            %if (sym = nl) %start
+                                symtype = quote
+                                %if (last = 0) %and (quote = 0) %start
+                                    nl getsym
+                                    %continue
+                                %finish
+                                cont = '+'
+                                %return
+                            %finish
+                        %finish
+                        %if (sym = 3) %start  { ff symbol }
+                            sym = nl    { effect of ff == nl }
+                            lines = lines - 1
+                            cont = '+'
+                            nl getsym
+                            %continue
+                        %finish
 
-s4:             symtype = quote
-                ->s1 %if (last = 0) %and (Quote = 0)
-                Cont = '+'
+                        { an ordinary symbol ? }
+                        key = kdict(sym)
+                        { is it a keyword? }
+                        %if (key&3 = 0) %and (symtype = 2) %start
+                            { yes, keyword, but is it %cnl? }
+                            %if (sym = 'C') %and (nextsymbol = nl) %start
+                                { it is %c, so skip over the nl }
+                                getsym
+                                cont = '+'
+                                nl getsym
+                                %continue
+                            %finish
+                        %finish %else %start
+                            symtype = key&3-2
+                        %finish
+                        %return
+                    %finish
+
+                    symtype = quote
+                    %if (last = 0) %and (quote = 0) %start
+                        nl getsym
+                        %continue
+                    %finish
+                    cont = '+'
+                    %return
+                %repeat
             %end { of "read sym" }
 
             %integerfn format selected
@@ -1124,6 +1169,27 @@ notin:              app = 0
                 %routine get(%integer limit)
                     %integer s, shift
 
+!                    %routine dumpchar(%integer ch)
+!                        printsymbol('"')
+!                        %if (ch = nl) %start
+!                            printstring("nl")
+!                        %finish %else %start
+!                            print symbol(ch)
+!                        %finish
+!                        printsymbol('"')
+!                    %end
+
+!                    %routine debugsymdata
+!                        select output( 0 )
+!                        printstring(" Line=");write(lines,0);
+!                        printstring(" Pos=");write(pos,0);
+!                        printstring(" eolsym=");  dumpchar(sym)
+!                        printstring(" symtype="); write(symtype,0)
+!                        printstring(" nextsym="); dumpchar(nextsymbol)
+!                        newline
+!                        select output( old output stream )
+!                    %end
+
                     shift = 0
                     %if (base # 10) %start
                         %if (base = 16) %start
@@ -1140,7 +1206,16 @@ notin:              app = 0
                             s = sym-'0'
                         %finish %else %if (symtype < 0) %start        { letter }
                             s = sym-'A'+10
+                        %finish %else %if (symtype = 2) %and (sym = 'C') %and (nextsymbol = nl) %start
+!                            debugsymdata
+
+                            skipsymbol
+                            readsym
+
+                            %continue
                         %finish %else %start
+!                            debugsymdata
+
                             %return
                         %finish
                         %return %if (s >= limit)
@@ -1160,7 +1235,7 @@ notin:              app = 0
                         %finish %else %start
                             n = n<<shift+s
                         %finish
-                        read sym
+                        readsym
                     %repeat
                 %end { of "get" }
 
@@ -1186,7 +1261,7 @@ topatom:        pos1 = pos
 
                 { locate atom in fixed dict }
                 k = key>>2
-                read sym
+                readsym
                 %cycle
                     j = kdict(k)
                     %exit %if (j&x'4000' # 0)
@@ -1195,11 +1270,11 @@ topatom:        pos1 = pos
                         k = k+1
                     %finish %else %start
                         l = j>>7&127
-                        read sym
+                        readsym
                         %if (j > 0) %start
                             %if (l # 0) %start
                                 ->err %if (l # sym) %or (symtype < 0)
-                                read sym
+                                readsym
                             %finish
                             l = 1
                         %finish
@@ -1216,7 +1291,7 @@ topatom:        pos1 = pos
 
                         { special action needs to be taken with <comma nl> as }
                         { const array lists can be enormous }
-                        read sym
+                        readsym
                     %finish
                     %return
                 %finish
@@ -1253,10 +1328,10 @@ symbols:        atom1 = var
 chars:          n = 0
                 cont = cquote
                 %cycle
-                    read sym
+                    readsym
                     %if (sym = cquote) %start
                         %exit %if (nextsymbol # cquote)
-                        read sym
+                        readsym
                     %finish
                     %if n&(\((-1)>>byte size)) # 0 %start   { overflow }
                         pos1 = pos
@@ -1304,10 +1379,10 @@ text:           ->chars %if (quote < 0)      { character consts }
                     cont = squote
                     quote = 1
                     %cycle
-                        read sym
+                        readsym
                         %if (sym = squote) %start           { terminator? }
                             %exit %if (nextsymbol # squote) { yes -> }
-                            read sym                        { skip quote }
+                            readsym                         { skip quote }
                         %finish
 
                         { store the byte and increment string size }
@@ -1322,7 +1397,7 @@ text:           ->chars %if (quote < 0)      { character consts }
 
                     quote = 0
                     cont = ' '
-                    read sym
+                    readsym
                     code atom(target)
                     %exit %unless (atom1 = 48) %and (sym = squote)    { fold "???"."+++" }
                 %repeat
@@ -1347,7 +1422,7 @@ bxk:            atom1 = var
                     %exit %unless (sym = '_') %and (base # 0) %and (pend quote = 0)   { change of base }
                     pt = pt+1
                     glink(pt) = '_'
-                    read sym
+                    readsym
                     base = n
                 %repeat
 
@@ -1358,10 +1433,20 @@ bxk:            atom1 = var
                 %if (sym = '.') %start    { a real constant }
                     pt = pt+1
                     glink(pt) = '.'
-                    read sym
                     type = real type
                     n = base
                     base = 0
+
+                    readsym
+
+!                        select output( 0 )
+!                        printstring("realsym=")
+!                        printsymbol('"')
+!                        print symbol(sym)
+!                        printsymbol('"')
+!                        newline
+!                        select output( old output stream )
+
                     get(n)
                 %finish
 
@@ -1373,7 +1458,7 @@ bxk:            atom1 = var
                     type = integer type
                     base = 10
                     %if (sym = '-') %start
-                        read sym
+                        readsym
                         get(10)
                         n = -n
                     %finish %else %start
@@ -1417,32 +1502,32 @@ name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                     n = n + 1
                     dict(dp) = dict(dp) ! (sym << 8)
 !                    byteinteger(dbase+n) = sym&255
-                    read sym; %exit %if (symtype >= 0)
+                    readsym; %exit %if (symtype >= 0)
 
                     { add the 4x+2 numbered sym char to the dict }
                     n = n + 1
                     dict(dp) = dict(dp) ! (sym << 16)
 !                    byteinteger(dbase+n) = sym&255
-                    read sym; %exit %if (symtype >= 0)
+                    readsym; %exit %if (symtype >= 0)
 
                     { add the 4x+3 numbered sym char to the dict }
                     n = n + 1
                     dict(dp) = dict(dp) ! (sym << 24)
 !                    byteinteger(dbase+n) = sym&255
                     dp = dp + 1; dict(dp) = 0
-                    read sym; %exit %if (symtype >= 0)
+                    readsym; %exit %if (symtype >= 0)
 
                     { add the 4x+4 numbered sym char to the dict }
                     n = n + 1
                     dict(dp) = sym
 !                    byteinteger(dbase+n) = sym&255
-                    read sym; %exit %if (symtype >= 0)
+                    readsym; %exit %if (symtype >= 0)
                 %repeat
 
                 %if (sym = cquote) %start
                     pend quote = 100
                     ->symbols %if (hash value = 'M')
-                    read sym
+                    readsym
                     %if (hash value = 'X') %then base = 16 %and ->bxk
                     %if (hash value = 'K') %then base =  8 %and ->bxk
                     %if (hash value = 'O') %then base =  8 %and ->bxk
@@ -1486,13 +1571,13 @@ name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                 add char( iCodeMCODE )
                 %cycle
                     add char( sym )
-                    read sym
+                    readsym
                 %repeat %until (Sym = '_') %or (Symtype = 0)
                 { pull in letters and digits }
                 add char( '_' )
                 %if (symtype # 0) %start
                     { not terminator }
-                    read sym
+                    readsym
                     %while (symtype # 0) %cycle
                         %if (symtype < 0) %start
                             { complex }
@@ -1515,7 +1600,7 @@ name:           atom1 = 0 %and %return %if (27 <= target <= 41)
                             sym = sym!128 %if (symtype = 2)
                             { underline with % }
                             add char( sym )
-                            read sym
+                            readsym
                         %finish
                     %repeat
                 %finish
@@ -1560,7 +1645,7 @@ again:          %while (sym type = 0) %cycle        { skip redundant terminators
                     c = cont
                     cont = ' '
                     cont = '+' %if (ocount >= 0)
-                    read sym
+                    readsym
                     cont = c
                 %repeat
                 ->skip %if (sym = '!')              { comment }
@@ -1569,7 +1654,7 @@ again:          %while (sym type = 0) %cycle        { skip redundant terminators
                 %if (atom1 = comment) %start
 skip:               quote = 1
                     c = cont
-                    read sym %and cont = c %while (sym # nl)    { skip to end of line }
+                    readsym %and cont = c %while (sym # nl)    { skip to end of line }
                     quote = 0
                     symtype = 0
                     ->again
